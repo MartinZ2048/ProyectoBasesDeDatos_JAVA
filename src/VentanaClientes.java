@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -20,8 +21,12 @@ public class VentanaClientes extends JFrame {
     private JTable tablaClientes;
 
     // --- Componentes del Formulario ---
-    private JTextField txtNombres, txtApellidos, txtCedula, txtNombreEmpresa, 
-                         txtRuc, txtTelefono, txtCorreo, txtDireccion, txtSede;
+    private JTextField txtIdCliente, txtNombre, txtApellido, txtCedula, txtEmail, txtTelefono, txtDireccion, txtIdSucursal;
+
+    // --- Expresiones Regulares para Validación ---
+    private static final String REGEX_CEDULA = "^\\d{10}$";
+    private static final String REGEX_TELEFONO = "^0\\d{9}$";
+    private static final String REGEX_EMAIL = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
 
     public VentanaClientes() {
         dbConnector = new DatabaseConnector();
@@ -43,7 +48,7 @@ public class VentanaClientes extends JFrame {
         getContentPane().add(lblTitulo);
 
         JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBounds(20, 60, 750, 450);
+        scrollPane.setBounds(20, 60, 750, 580);
         getContentPane().add(scrollPane);
 
         tablaClientes = new JTable();
@@ -60,173 +65,155 @@ public class VentanaClientes extends JFrame {
         panelDatos.setLayout(null);
         getContentPane().add(panelDatos);
 
-        JLabel lblDatosTitulo = new JLabel("Datos");
+        JLabel lblDatosTitulo = new JLabel("Datos del Cliente");
         lblDatosTitulo.setFont(new Font("Arial", Font.BOLD, 20));
-        lblDatosTitulo.setBounds(10, 10, 100, 25);
+        lblDatosTitulo.setBounds(10, 10, 200, 25);
         panelDatos.add(lblDatosTitulo);
 
-        // --- Creación de campos del formulario ---
-        txtNombres = crearCampo(panelDatos, "Nombres", 60);
-        txtApellidos = crearCampo(panelDatos, "Apellidos", 110);
-        txtCedula = crearCampo(panelDatos, "C.I.", 160);
-        txtCorreo = crearCampo(panelDatos, "Correo Electrónico", 210);
-        txtTelefono = crearCampoConPrefijo(panelDatos, "Telef. Celular", 260);
-        txtNombreEmpresa = crearCampo(panelDatos, "Nombre de la Empresa", 310);
-        txtRuc = crearCampo(panelDatos, "RUC", 360, 140, 100);
-        txtSede = crearCampo(panelDatos, "Sucursal", 360, 290, 70);
-        txtDireccion = crearCampo(panelDatos, "Dirección", 410);
+        txtIdCliente = crearCampo(panelDatos, "ID Cliente", 60);
+        txtIdCliente.setEditable(false);
+        txtNombre = crearCampo(panelDatos, "Nombre", 110);
+        txtApellido = crearCampo(panelDatos, "Apellido", 160);
+        txtCedula = crearCampo(panelDatos, "Cédula", 210);
+        txtEmail = crearCampo(panelDatos, "Email", 260);
+        txtTelefono = crearCampo(panelDatos, "Teléfono", 310);
+        txtDireccion = crearCampo(panelDatos, "Dirección", 360);
+        txtIdSucursal = crearCampo(panelDatos, "ID Sucursal", 410);
 
-        // --- BOTONES DE ACCIÓN ---
-        JButton btnAgregar = crearBoton("Agregar", 20, 530, new Color(220, 53, 69));
-        JButton btnModificar = crearBoton("Modificar", 210, 530, new Color(220, 53, 69));
-        JButton btnNuevo = crearBoton("Nuevo Cliente", 400, 530, new Color(220, 53, 69));
-        JButton btnEliminar = crearBoton("Eliminar", 590, 530, new Color(220, 53, 69));
+        JButton btnAgregar = crearBoton("Agregar", 10, 480, new Color(40, 167, 69));
+        JButton btnModificar = crearBoton("Modificar", 170, 480, new Color(255, 193, 7));
+        JButton btnEliminar = crearBoton("Eliminar", 10, 530, new Color(220, 53, 69));
+        JButton btnNuevo = crearBoton("Limpiar", 170, 530, new Color(108, 117, 125));
+        JButton btnRegresar = crearBoton("Regresar", 10, 580, new Color(0, 123, 255));
         
-        getContentPane().add(btnAgregar);
-        getContentPane().add(btnModificar);
-        getContentPane().add(btnNuevo);
-        getContentPane().add(btnEliminar);
-
-        JButton btnRegresar = crearBoton("Regresar", 210, 550, new Color(220, 53, 69));
+        panelDatos.add(btnAgregar);
+        panelDatos.add(btnModificar);
+        panelDatos.add(btnEliminar);
+        panelDatos.add(btnNuevo);
         panelDatos.add(btnRegresar);
 
-        // --- LÓGICA DE LOS BOTONES ---
         btnNuevo.addActionListener(e -> limpiarCampos());
         btnAgregar.addActionListener(e -> agregarCliente());
         btnModificar.addActionListener(e -> modificarCliente());
         btnEliminar.addActionListener(e -> eliminarCliente());
         btnRegresar.addActionListener(e -> this.dispose());
 
-        // --- EVENTO PARA SELECCIONAR FILA DE LA TABLA ---
         tablaClientes.addMouseListener(new MouseAdapter() {
-            @Override
             public void mouseClicked(MouseEvent e) {
-                int filaSeleccionada = tablaClientes.getSelectedRow();
-                if (filaSeleccionada != -1) {
-                    // El ID (columna 0) no se muestra, pero se usa para UPDATE y DELETE
-                    txtNombres.setText(tablaClientes.getValueAt(filaSeleccionada, 1).toString());
-                    txtApellidos.setText(tablaClientes.getValueAt(filaSeleccionada, 2).toString());
-                    txtCedula.setText(tablaClientes.getValueAt(filaSeleccionada, 3).toString());
-                    txtNombreEmpresa.setText(tablaClientes.getValueAt(filaSeleccionada, 4).toString());
-                    txtRuc.setText(tablaClientes.getValueAt(filaSeleccionada, 5).toString());
-                    txtTelefono.setText(tablaClientes.getValueAt(filaSeleccionada, 6).toString());
-                    txtCorreo.setText(tablaClientes.getValueAt(filaSeleccionada, 7).toString());
-                    txtDireccion.setText(tablaClientes.getValueAt(filaSeleccionada, 8).toString());
-                    txtSede.setText(tablaClientes.getValueAt(filaSeleccionada, 9).toString());
+                int fila = tablaClientes.getSelectedRow();
+                if (fila != -1) {
+                    txtIdCliente.setText(tablaClientes.getValueAt(fila, 0).toString());
+                    txtNombre.setText(tablaClientes.getValueAt(fila, 1).toString());
+                    txtApellido.setText(tablaClientes.getValueAt(fila, 2).toString());
+                    txtCedula.setText(tablaClientes.getValueAt(fila, 3).toString());
+                    txtEmail.setText(tablaClientes.getValueAt(fila, 4) != null ? tablaClientes.getValueAt(fila, 4).toString() : "");
+                    txtTelefono.setText(tablaClientes.getValueAt(fila, 5) != null ? tablaClientes.getValueAt(fila, 5).toString() : "");
+                    txtDireccion.setText(tablaClientes.getValueAt(fila, 6) != null ? tablaClientes.getValueAt(fila, 6).toString() : "");
+                    txtIdSucursal.setText(tablaClientes.getValueAt(fila, 7) != null ? tablaClientes.getValueAt(fila, 7).toString() : "");
                 }
             }
         });
     }
 
-    // --- MÉTODOS DE LÓGICA (CRUD) ---
-    private void agregarCliente() {
-        if (txtNombres.getText().trim().isEmpty() || txtCedula.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Nombre y Cédula son campos obligatorios.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
-            return;
+    private boolean validarCampos() {
+        if (txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty() || txtCedula.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Los campos Nombre, Apellido y Cédula son obligatorios.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
+        if (!Pattern.matches(REGEX_CEDULA, txtCedula.getText())) {
+            JOptionPane.showMessageDialog(this, "El formato de la Cédula es incorrecto. Debe contener 10 dígitos.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (!txtTelefono.getText().trim().isEmpty() && !Pattern.matches(REGEX_TELEFONO, txtTelefono.getText())) {
+            JOptionPane.showMessageDialog(this, "El formato del Teléfono es incorrecto. Debe empezar con 0 y tener 10 dígitos.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (!txtEmail.getText().trim().isEmpty() && !Pattern.matches(REGEX_EMAIL, txtEmail.getText())) {
+            JOptionPane.showMessageDialog(this, "El formato del Email es incorrecto. Use un formato como 'usuario@dominio.com'.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    private void agregarCliente() {
+        if (!validarCampos()) return;
+        String datosNuevos = String.format("Nombre: %s, Apellido: %s, Cedula: %s", txtNombre.getText(), txtApellido.getText(), txtCedula.getText());
         String sql = String.format(
-            "INSERT INTO CLIENTE (IdCliente, nombre, apellido, cedula, nombre_empresarial, ruc, telefono_celular, correo_electronico, direccion, sede) " +
-            "VALUES ((SELECT NVL(MAX(IdCliente), 0) + 1 FROM CLIENTE), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
-            txtNombres.getText(), txtApellidos.getText(), txtCedula.getText(), txtNombreEmpresa.getText(),
-            txtRuc.getText(), txtTelefono.getText(), txtCorreo.getText(), txtDireccion.getText(), txtSede.getText()
+            "INSERT INTO CLIENTE (ID_Cliente, Nombre, Apellido, Cedula, Email, Telefono, Direccion, ID_Sucursal) VALUES ((SELECT NVL(MAX(ID_Cliente), 0) + 1 FROM CLIENTE), '%s', '%s', '%s', '%s', '%s', '%s', %s)",
+            txtNombre.getText(), txtApellido.getText(), txtCedula.getText(), txtEmail.getText(), txtTelefono.getText(), txtDireccion.getText(), txtIdSucursal.getText()
         );
         if (dbConnector.executeUpdate(sql)) {
             JOptionPane.showMessageDialog(this, "Cliente agregado exitosamente.");
+            // --- REGISTRO DE AUDITORÍA ---
+            dbConnector.registrarAuditoria("CLIENTE", "INSERT", "Nuevo", datosNuevos);
             cargarDatosClientes();
             limpiarCampos();
         } else {
-            JOptionPane.showMessageDialog(this, "Error al agregar el cliente.", "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error al agregar el cliente.");
         }
     }
 
     private void modificarCliente() {
-        int filaSeleccionada = tablaClientes.getSelectedRow();
-        if (filaSeleccionada == -1) {
-            JOptionPane.showMessageDialog(this, "Por favor, seleccione un cliente de la tabla para modificar.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (txtIdCliente.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione un cliente de la tabla.");
             return;
         }
-        String idCliente = tablaClientes.getValueAt(filaSeleccionada, 0).toString();
+        if (!validarCampos()) return;
+        String datosNuevos = String.format("Nombre: %s, Apellido: %s, Cedula: %s", txtNombre.getText(), txtApellido.getText(), txtCedula.getText());
         String sql = String.format(
-            "UPDATE CLIENTE SET nombre = '%s', apellido = '%s', cedula = '%s', nombre_empresarial = '%s', " +
-            "ruc = '%s', telefono_celular = '%s', correo_electronico = '%s', direccion = '%s', sede = '%s' " +
-            "WHERE IdCliente = %s",
-            txtNombres.getText(), txtApellidos.getText(), txtCedula.getText(), txtNombreEmpresa.getText(),
-            txtRuc.getText(), txtTelefono.getText(), txtCorreo.getText(), txtDireccion.getText(),
-            txtSede.getText(), idCliente
+            "UPDATE CLIENTE SET Nombre = '%s', Apellido = '%s', Cedula = '%s', Email = '%s', Telefono = '%s', Direccion = '%s', ID_Sucursal = %s WHERE ID_Cliente = %s",
+            txtNombre.getText(), txtApellido.getText(), txtCedula.getText(), txtEmail.getText(), txtTelefono.getText(), txtDireccion.getText(), txtIdSucursal.getText(), txtIdCliente.getText()
         );
         if (dbConnector.executeUpdate(sql)) {
             JOptionPane.showMessageDialog(this, "Cliente modificado exitosamente.");
+            // --- REGISTRO DE AUDITORÍA ---
+            dbConnector.registrarAuditoria("CLIENTE", "UPDATE", txtIdCliente.getText(), datosNuevos);
             cargarDatosClientes();
             limpiarCampos();
         } else {
-            JOptionPane.showMessageDialog(this, "Error al modificar el cliente.", "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error al modificar el cliente.");
         }
     }
-    
+
     private void eliminarCliente() {
-        int filaSeleccionada = tablaClientes.getSelectedRow();
-        if (filaSeleccionada == -1) {
-            JOptionPane.showMessageDialog(this, "Por favor, seleccione un cliente de la tabla para eliminar.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (txtIdCliente.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione un cliente de la tabla.");
             return;
         }
-        String idCliente = tablaClientes.getValueAt(filaSeleccionada, 0).toString();
-        int confirmacion = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar a este cliente?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
-        if (confirmacion == JOptionPane.YES_OPTION) {
-            String sql = "DELETE FROM CLIENTE WHERE IdCliente = " + idCliente;
+        int res = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este cliente?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
+        if (res == JOptionPane.YES_OPTION) {
+            String idCliente = txtIdCliente.getText();
+            String sql = "DELETE FROM CLIENTE WHERE ID_Cliente = " + idCliente;
             if (dbConnector.executeUpdate(sql)) {
                 JOptionPane.showMessageDialog(this, "Cliente eliminado exitosamente.");
+                // --- REGISTRO DE AUDITORÍA ---
+                dbConnector.registrarAuditoria("CLIENTE", "DELETE", idCliente, "Registro eliminado");
                 cargarDatosClientes();
                 limpiarCampos();
             } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar el cliente.", "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error al eliminar el cliente.");
             }
         }
     }
 
     private void limpiarCampos() {
-        txtNombres.setText("");
-        txtApellidos.setText("");
+        txtIdCliente.setText("");
+        txtNombre.setText("");
+        txtApellido.setText("");
         txtCedula.setText("");
-        txtNombreEmpresa.setText("");
-        txtRuc.setText("");
+        txtEmail.setText("");
         txtTelefono.setText("");
-        txtCorreo.setText("");
         txtDireccion.setText("");
-        txtSede.setText("");
+        txtIdSucursal.setText("");
         tablaClientes.clearSelection();
     }
 
-    // --- Métodos auxiliares para crear componentes ---
-    private JTextField crearCampo(JPanel panel, String etiqueta, int yPos) {
-        JLabel lbl = new JLabel(etiqueta);
-        lbl.setBounds(10, yPos, 120, 25);
+    private JTextField crearCampo(JPanel panel, String etiqueta, int y) {
+        JLabel lbl = new JLabel(etiqueta + ":");
+        lbl.setBounds(10, y, 120, 25);
         panel.add(lbl);
         JTextField txt = new JTextField();
-        txt.setBounds(140, yPos, 220, 25);
-        panel.add(txt);
-        return txt;
-    }
-    
-    private JTextField crearCampo(JPanel panel, String etiqueta, int yPos, int xPos, int width) {
-        JLabel lbl = new JLabel(etiqueta);
-        lbl.setBounds(xPos - 120, yPos, 110, 25);
-        panel.add(lbl);
-        JTextField txt = new JTextField();
-        txt.setBounds(xPos, yPos, width, 25);
-        panel.add(txt);
-        return txt;
-    }
-
-    private JTextField crearCampoConPrefijo(JPanel panel, String etiqueta, int yPos) {
-        JLabel lbl = new JLabel(etiqueta);
-        lbl.setBounds(10, yPos, 100, 25);
-        panel.add(lbl);
-        JTextField txtPrefijo = new JTextField("+593");
-        txtPrefijo.setEditable(false);
-        txtPrefijo.setBounds(140, yPos, 40, 25);
-        panel.add(txtPrefijo);
-        JTextField txt = new JTextField();
-        txt.setBounds(185, yPos, 175, 25);
+        txt.setBounds(140, y, 220, 25);
         panel.add(txt);
         return txt;
     }
@@ -237,13 +224,11 @@ public class VentanaClientes extends JFrame {
         boton.setBackground(color);
         boton.setForeground(Color.WHITE);
         boton.setFont(new Font("Arial", Font.BOLD, 14));
-        boton.setFocusPainted(false);
         return boton;
     }
 
     private void cargarDatosClientes() {
-        String sql = "SELECT IdCliente, nombre, apellido, cedula, nombre_empresarial, ruc, telefono_celular, correo_electronico, direccion, sede FROM CLIENTE ORDER BY IdCliente";
-        DefaultTableModel model = (DefaultTableModel) dbConnector.query(sql);
-        tablaClientes.setModel(model);
+        String sql = "SELECT ID_Cliente, Nombre, Apellido, Cedula, Email, Telefono, Direccion, ID_Sucursal FROM CLIENTE ORDER BY ID_Cliente";
+        tablaClientes.setModel(dbConnector.query(sql));
     }
 }

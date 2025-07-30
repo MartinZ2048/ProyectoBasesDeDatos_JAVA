@@ -22,7 +22,6 @@ import javax.swing.border.Border;
 public class VentanaBienvenida extends JFrame {
 
     public VentanaBienvenida() {
-        // --- CONFIGURACIÓN DE LA VENTANA PRINCIPAL (SIN CAMBIOS) ---
         setTitle("Biblioteca Virtual");
         setSize(900, 600);
         setLocationRelativeTo(null);
@@ -41,11 +40,12 @@ public class VentanaBienvenida extends JFrame {
         ));
         backgroundPanel.add(mainPanel, BorderLayout.CENTER);
 
+        // --- MODIFICACIÓN: Título cambiado a "LIBRERIA" ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
         headerPanel.setPreferredSize(new Dimension(0, 120));
         
-        JLabel titleLabel = new JLabel("BIBLIOTECA", JLabel.CENTER);
+        JLabel titleLabel = new JLabel("LIBRERIA", JLabel.CENTER); // <-- CAMBIO AQUÍ
         titleLabel.setFont(new Font("Arial", Font.BOLD, 60));
         titleLabel.setForeground(Color.BLACK);
         titleLabel.setOpaque(true);
@@ -55,54 +55,58 @@ public class VentanaBienvenida extends JFrame {
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // --- PANEL DE BOTONES (CON LÓGICA MODIFICADA) ---
+        // --- MODIFICACIÓN: Nuevos botones ---
         JPanel buttonPanel = new JPanel(new GridLayout(2, 4, 15, 15));
         buttonPanel.setOpaque(false);
 
-        String[] buttonLabels = {"Productos", "Clientes", "Empleados", "Ventas", "Facturas", "Suministro", "Sucursales", "Proveedores"};
+        // --- Array de botones actualizado ---
+        String[] buttonLabels = {"Libros", "Clientes", "Empleados", "Ventas", "Proveedores", "Sucursales", "Suministro", "AUDITORIA"};
         
         for (String label : buttonLabels) {
-            JButton button = createStyledButton(label, Color.WHITE, Color.BLACK);
+            JButton button;
+            // --- Condición para el color especial del botón AUDITORIA ---
+            if (label.equals("AUDITORIA")) {
+                button = createStyledButton(label, new Color(255, 179, 179), Color.BLACK); // Color rojo claro
+            } else {
+                button = createStyledButton(label, Color.WHITE, Color.BLACK);
+            }
             
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // Añadimos un ActionListener para cada botón.
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    // Usamos un switch para determinar qué ventana abrir según el texto del botón.
+                    // --- Lógica de ActionListener actualizada ---
                     switch (label) {
-                        case "Productos":
-                            VentanaProductos ventanaProd = new VentanaProductos();
-                            ventanaProd.setLocationRelativeTo(null); // Centrar
-                            ventanaProd.setVisible(true); // Mostrar
+                        case "Libros":
+                            new VentanaLibros().setVisible(true);
                             break;
                         case "Clientes":
                             new VentanaClientes().setVisible(true);
                             break;
                         case "Empleados":
-                            // Para "Empleados", abrimos la ventana que ya existía.
                             new VentanaEmpleados().setVisible(true);
                             break;
                         case "Ventas":
-                            new VentanaVentas().setVisible(true);
-                            break;
-                        case "Facturas":
-                            new VentanaFacturas().setVisible(true);
-                            break;
-                        case "Suministro":
-                            new VentanaSuministro().setVisible(true);
-                            break;
-                        case "Sucursales":
-                            new VentanaSucursales().setVisible(true);
+                            // Asumiendo que tienes una VentanaVentas
+                            // new VentanaVentas().setVisible(true);
                             break;
                         case "Proveedores":
-                            new VentanaProveedores().setVisible(true);
+                             // Asumiendo que tienes una VentanaProveedores
+                            // new VentanaProveedores().setVisible(true);
+                            break;
+                        case "Sucursales":
+                             // Asumiendo que tienes una VentanaSucursales
+                            // new VentanaSucursales().setVisible(true);
+                            break;
+                        case "Suministro":
+                             // Asumiendo que tienes una VentanaSuministro
+                            // new VentanaSuministro().setVisible(true);
+                            break;
+                        case "AUDITORIA":
+                            new VentanaAuditoria().setVisible(true);
                             break;
                     }
                 }
             });
-            // --- FIN DE LA MODIFICACIÓN ---
-            
             buttonPanel.add(button);
         }
         mainPanel.add(buttonPanel, BorderLayout.CENTER);

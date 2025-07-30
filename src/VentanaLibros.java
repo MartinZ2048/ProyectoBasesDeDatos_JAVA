@@ -7,9 +7,9 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 // La clase AHORA extiende JFrame para ser una ventana
-public class VentanaProductos extends JFrame {
+public class VentanaLibros extends JFrame {
 
-    public VentanaProductos() {
+    public VentanaLibros() {
         setTitle("Productos");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(400, 300);
