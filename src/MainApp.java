@@ -1,10 +1,3 @@
-/*
- * =============================================================================
- * --- MainApp.java ---
- * Punto de entrada de la aplicación.
- * Inicia la nueva ventana de bienvenida.
- * =============================================================================
- */
 import com.formdev.flatlaf.FlatLightLaf;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;

@@ -40,12 +40,11 @@ public class VentanaBienvenida extends JFrame {
         ));
         backgroundPanel.add(mainPanel, BorderLayout.CENTER);
 
-        // --- MODIFICACIÓN: Título cambiado a "LIBRERIA" ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
         headerPanel.setPreferredSize(new Dimension(0, 120));
         
-        JLabel titleLabel = new JLabel("LIBRERIA", JLabel.CENTER); // <-- CAMBIO AQUÍ
+        JLabel titleLabel = new JLabel("LIBRERIA", JLabel.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 60));
         titleLabel.setForeground(Color.BLACK);
         titleLabel.setOpaque(true);
@@ -55,16 +54,13 @@ public class VentanaBienvenida extends JFrame {
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // --- MODIFICACIÓN: Nuevos botones ---
         JPanel buttonPanel = new JPanel(new GridLayout(2, 4, 15, 15));
         buttonPanel.setOpaque(false);
 
-        // --- Array de botones actualizado ---
         String[] buttonLabels = {"Libros", "Clientes", "Empleados", "Ventas", "Proveedores", "Sucursales", "Suministro", "AUDITORIA"};
         
         for (String label : buttonLabels) {
             JButton button;
-            // --- Condición para el color especial del botón AUDITORIA ---
             if (label.equals("AUDITORIA")) {
                 button = createStyledButton(label, new Color(255, 179, 179), Color.BLACK); // Color rojo claro
             } else {
@@ -74,7 +70,7 @@ public class VentanaBienvenida extends JFrame {
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    // --- Lógica de ActionListener actualizada ---
+                    // --- CORRECCIÓN: Se descomentaron las llamadas para abrir las nuevas ventanas ---
                     switch (label) {
                         case "Libros":
                             new VentanaLibros().setVisible(true);
@@ -86,20 +82,16 @@ public class VentanaBienvenida extends JFrame {
                             new VentanaEmpleados().setVisible(true);
                             break;
                         case "Ventas":
-                            // Asumiendo que tienes una VentanaVentas
-                            // new VentanaVentas().setVisible(true);
+                            new VentanaVentas().setVisible(true); // <-- CORREGIDO
                             break;
                         case "Proveedores":
-                             // Asumiendo que tienes una VentanaProveedores
-                            // new VentanaProveedores().setVisible(true);
+                            new VentanaProveedores().setVisible(true); // <-- CORREGIDO
                             break;
                         case "Sucursales":
-                             // Asumiendo que tienes una VentanaSucursales
-                            // new VentanaSucursales().setVisible(true);
+                            new VentanaSucursales().setVisible(true); // <-- CORREGIDO
                             break;
                         case "Suministro":
-                             // Asumiendo que tienes una VentanaSuministro
-                            // new VentanaSuministro().setVisible(true);
+                            new VentanaSuministro().setVisible(true); // <-- CORREGIDO
                             break;
                         case "AUDITORIA":
                             new VentanaAuditoria().setVisible(true);
@@ -111,7 +103,6 @@ public class VentanaBienvenida extends JFrame {
         }
         mainPanel.add(buttonPanel, BorderLayout.CENTER);
 
-        // --- PIE DE PÁGINA (SIN CAMBIOS) ---
         JPanel footerPanel = new JPanel(new BorderLayout());
         footerPanel.setOpaque(false);
         footerPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
@@ -142,7 +133,6 @@ public class VentanaBienvenida extends JFrame {
         return button;
     }
 
-    // --- CLASES INTERNAS PARA ESTILOS (SIN CAMBIOS) ---
     class DottedBackgroundPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {

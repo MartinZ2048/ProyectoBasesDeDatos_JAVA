@@ -12,10 +12,16 @@ import javax.swing.table.TableModel;
 public class DatabaseConnector {
 
     private static final String URL_CONEXION = "jdbc:oracle:thin:@//localhost:1521/orcl";
-    private static final String USUARIO = "biblioteca_master";
-    private static final String CONTRASENA = "biblioteca_master";
+    private static final String USUARIO = "maestronodo";
+    private static final String CONTRASENA = "maestronodo";
 
-    private Connection getConnection() throws SQLException, ClassNotFoundException {
+    /**
+     * --- CORRECCIÓN ---
+     * Se cambió el modificador de acceso de 'private' a 'public' para que
+     * otras clases (como las ventanas de gestión) puedan obtener una conexión
+     * a la base de datos y usar PreparedStatement para mayor seguridad.
+     */
+    public Connection getConnection() throws SQLException, ClassNotFoundException {
         Class.forName("oracle.jdbc.driver.OracleDriver");
         return DriverManager.getConnection(URL_CONEXION, USUARIO, CONTRASENA);
     }
@@ -45,7 +51,6 @@ public class DatabaseConnector {
     }
 
     /**
-     * --- MÉTODO NUEVO PARA AUDITORÍA ---
      * Registra una acción en la tabla de auditoría.
      * @param tablaAfectada El nombre de la tabla modificada (ej. "EMPLEADO").
      * @param operacion El tipo de operación ('INSERT', 'UPDATE', 'DELETE').
@@ -56,12 +61,13 @@ public class DatabaseConnector {
         // Se obtiene el usuario de la base de datos actual.
         String usuarioActual = "biblioteca_master"; 
         
+        // --- IMPORTANTE: Esta implementación sigue siendo vulnerable a inyección SQL ---
+        // Se recomienda refactorizar para usar PreparedStatement también aquí.
         String sql = String.format(
             "INSERT INTO AUDITORIA (tabla_afectada, operacion, id_registro, usuario, datos_nuevos) VALUES ('%s', '%s', '%s', '%s', '%s')",
             tablaAfectada, operacion, idRegistro, usuarioActual, datosNuevos
         );
 
-        // Usamos executeUpdate para insertar el registro de auditoría.
         executeUpdate(sql);
     }
 
