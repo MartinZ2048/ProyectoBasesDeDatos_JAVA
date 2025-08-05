@@ -20,8 +20,6 @@ public class VentanaLibros extends JFrame {
 
     private final DatabaseConnector dbConnector;
     private JTable tablaLibros;
-
-    // --- Componentes del Formulario ---
     private JTextField txtIdLibro, txtTitulo, txtIsbn, txtAutor, txtEditorial, txtPrecio;
 
     public VentanaLibros() {
@@ -33,20 +31,16 @@ public class VentanaLibros extends JFrame {
     private void initComponents() {
         setTitle("Gestión de Libros");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        // Se recomienda usar LayoutManagers como BorderLayout o GridBagLayout para interfaces redimensionables.
-        // Se usa null layout para consistencia con el proyecto existente.
         setSize(1200, 700);
         setLocationRelativeTo(null);
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(245, 245, 245));
 
-        // --- Título Superior ---
         JLabel lblTituloVentana = new JLabel("\"LIBROS\" - Quicentro", JLabel.CENTER);
         lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
         lblTituloVentana.setBounds(10, 10, 1160, 30);
         getContentPane().add(lblTituloVentana);
 
-        // --- Panel Izquierdo (Tabla) ---
         JScrollPane scrollPane = new JScrollPane();
         scrollPane.setBounds(20, 50, 750, 500);
         getContentPane().add(scrollPane);
@@ -59,7 +53,6 @@ public class VentanaLibros extends JFrame {
         tableHeader.setForeground(Color.WHITE);
         scrollPane.setViewportView(tablaLibros);
 
-        // --- Panel Derecho (Formulario de Datos) ---
         JPanel panelDatos = new JPanel();
         panelDatos.setBackground(new Color(245, 245, 245));
         panelDatos.setBounds(780, 50, 380, 500);
@@ -71,23 +64,20 @@ public class VentanaLibros extends JFrame {
         lblDatosTitulo.setBounds(10, 10, 360, 25);
         panelDatos.add(lblDatosTitulo);
 
-        // Creación de campos de texto
         txtIdLibro = crearCampo(panelDatos, "ID Libro:", 60);
-        txtIdLibro.setEditable(false); // El ID es autogenerado o de la BD
+        txtIdLibro.setEditable(false);
         txtTitulo = crearCampo(panelDatos, "Título:", 110);
         txtIsbn = crearCampo(panelDatos, "ISBN:", 160);
         txtAutor = crearCampo(panelDatos, "Autor:", 210);
         txtEditorial = crearCampo(panelDatos, "Editorial:", 260);
         txtPrecio = crearCampo(panelDatos, "Precio:", 310);
 
-        // --- Panel Inferior (Botonera) ---
         JPanel panelBotones = new JPanel();
         panelBotones.setLayout(null);
         panelBotones.setBounds(20, 560, 1140, 80);
         panelBotones.setBackground(new Color(245, 245, 245));
         getContentPane().add(panelBotones);
         
-        // Botones con colores de la referencia
         JButton btnAgregar = crearBoton("Agregar", 200, 10, new Color(144, 238, 144), Color.BLACK);
         JButton btnModificar = crearBoton("Modificar", 400, 10, new Color(255, 255, 0), Color.BLACK);
         JButton btnEliminar = crearBoton("Eliminar", 600, 10, new Color(255, 99, 71), Color.WHITE);
@@ -98,7 +88,6 @@ public class VentanaLibros extends JFrame {
         panelBotones.add(btnEliminar);
         panelBotones.add(btnRegresar);
 
-        // --- Action Listeners ---
         btnAgregar.addActionListener(e -> agregarLibro());
         btnModificar.addActionListener(e -> modificarLibro());
         btnEliminar.addActionListener(e -> eliminarLibro());
@@ -133,7 +122,7 @@ public class VentanaLibros extends JFrame {
 
         String sql = "INSERT INTO LIBRO (idLibro, titulo, isbn, autor, editorial, precio) VALUES ((SELECT NVL(MAX(idLibro), 0) + 1 FROM LIBRO), ?, ?, ?, ?, ?)";
         
-        try (Connection conn = dbConnector.getConnection(); // Asumiendo que tienes un método público para obtener la conexión
+        try (Connection conn = dbConnector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, txtTitulo.getText());
@@ -145,7 +134,6 @@ public class VentanaLibros extends JFrame {
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
                 JOptionPane.showMessageDialog(this, "Libro agregado exitosamente.");
-                // El trigger de la BD se encargará de la auditoría.
                 cargarDatosLibros();
                 limpiarCampos();
             }

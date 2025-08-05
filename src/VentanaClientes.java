@@ -2,6 +2,9 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -12,18 +15,14 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 public class VentanaClientes extends JFrame {
 
     private final DatabaseConnector dbConnector;
     private JTable tablaClientes;
-
-    // --- Componentes del Formulario ---
     private JTextField txtIdCliente, txtNombre, txtApellido, txtCedula, txtEmail, txtTelefono, txtDireccion, txtIdSucursal;
 
-    // --- Expresiones Regulares para Validación ---
     private static final String REGEX_CEDULA = "^\\d{10}$";
     private static final String REGEX_TELEFONO = "^0\\d{9}$";
     private static final String REGEX_EMAIL = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$";
@@ -42,7 +41,7 @@ public class VentanaClientes extends JFrame {
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(236, 236, 236));
 
-        JLabel lblTitulo = new JLabel("CLIENTES - QUITOCENTRO");
+        JLabel lblTitulo = new JLabel("CLIENTES - QUICENTRO");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
         lblTitulo.setBounds(20, 20, 400, 30);
         getContentPane().add(lblTitulo);
@@ -109,10 +108,16 @@ public class VentanaClientes extends JFrame {
                     txtEmail.setText(tablaClientes.getValueAt(fila, 4) != null ? tablaClientes.getValueAt(fila, 4).toString() : "");
                     txtTelefono.setText(tablaClientes.getValueAt(fila, 5) != null ? tablaClientes.getValueAt(fila, 5).toString() : "");
                     txtDireccion.setText(tablaClientes.getValueAt(fila, 6) != null ? tablaClientes.getValueAt(fila, 6).toString() : "");
-                    txtIdSucursal.setText(tablaClientes.getValueAt(fila, 7) != null ? tablaClientes.getValueAt(fila, 7).toString() : "");
+                    txtIdSucursal.setText(tablaClientes.getValueAt(fila, 7).toString());
                 }
             }
         });
+    }
+    
+    private void cargarDatosClientes() {
+        // --- CORRECCIÓN: Se usan los nombres de columna del script SQL (idCliente, idSucursal, etc.) ---
+        String sql = "SELECT idCliente, nombre, apellido, cedula, email, telefono, direccion, idSucursal FROM CLIENTE ORDER BY idCliente";
+        tablaClientes.setModel(dbConnector.query(sql));
     }
 
     private boolean validarCampos() {
@@ -137,19 +142,29 @@ public class VentanaClientes extends JFrame {
 
     private void agregarCliente() {
         if (!validarCampos()) return;
-        String datosNuevos = String.format("Nombre: %s, Apellido: %s, Cedula: %s", txtNombre.getText(), txtApellido.getText(), txtCedula.getText());
-        String sql = String.format(
-            "INSERT INTO CLIENTE (ID_Cliente, Nombre, Apellido, Cedula, Email, Telefono, Direccion, ID_Sucursal) VALUES ((SELECT NVL(MAX(ID_Cliente), 0) + 1 FROM CLIENTE), '%s', '%s', '%s', '%s', '%s', '%s', %s)",
-            txtNombre.getText(), txtApellido.getText(), txtCedula.getText(), txtEmail.getText(), txtTelefono.getText(), txtDireccion.getText(), txtIdSucursal.getText()
-        );
-        if (dbConnector.executeUpdate(sql)) {
+        
+        // --- CORRECCIÓN: Se usan PreparedStatement para seguridad y nombres de columna correctos ---
+        String sql = "INSERT INTO CLIENTE (idCliente, nombre, apellido, cedula, email, telefono, direccion, idSucursal) VALUES ((SELECT NVL(MAX(idCliente), 0) + 1 FROM CLIENTE), ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = dbConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, txtNombre.getText());
+            pstmt.setString(2, txtApellido.getText());
+            pstmt.setString(3, txtCedula.getText());
+            pstmt.setString(4, txtEmail.getText());
+            pstmt.setString(5, txtTelefono.getText());
+            pstmt.setString(6, txtDireccion.getText());
+            pstmt.setInt(7, Integer.parseInt(txtIdSucursal.getText()));
+            
+            pstmt.executeUpdate();
             JOptionPane.showMessageDialog(this, "Cliente agregado exitosamente.");
-            // --- REGISTRO DE AUDITORÍA ---
-            dbConnector.registrarAuditoria("CLIENTE", "INSERT", "Nuevo", datosNuevos);
+            // La auditoría ahora es manejada por el TRIGGER de la base de datos.
             cargarDatosClientes();
             limpiarCampos();
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al agregar el cliente.");
+            
+        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+            JOptionPane.showMessageDialog(this, "Error al agregar el cliente: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -159,19 +174,32 @@ public class VentanaClientes extends JFrame {
             return;
         }
         if (!validarCampos()) return;
-        String datosNuevos = String.format("Nombre: %s, Apellido: %s, Cedula: %s", txtNombre.getText(), txtApellido.getText(), txtCedula.getText());
-        String sql = String.format(
-            "UPDATE CLIENTE SET Nombre = '%s', Apellido = '%s', Cedula = '%s', Email = '%s', Telefono = '%s', Direccion = '%s', ID_Sucursal = %s WHERE ID_Cliente = %s",
-            txtNombre.getText(), txtApellido.getText(), txtCedula.getText(), txtEmail.getText(), txtTelefono.getText(), txtDireccion.getText(), txtIdSucursal.getText(), txtIdCliente.getText()
-        );
-        if (dbConnector.executeUpdate(sql)) {
-            JOptionPane.showMessageDialog(this, "Cliente modificado exitosamente.");
-            // --- REGISTRO DE AUDITORÍA ---
-            dbConnector.registrarAuditoria("CLIENTE", "UPDATE", txtIdCliente.getText(), datosNuevos);
-            cargarDatosClientes();
-            limpiarCampos();
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al modificar el cliente.");
+        
+        // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
+        String sql = "UPDATE CLIENTE SET nombre = ?, apellido = ?, cedula = ?, email = ?, telefono = ?, direccion = ?, idSucursal = ? WHERE idCliente = ?";
+        
+        try (Connection conn = dbConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, txtNombre.getText());
+            pstmt.setString(2, txtApellido.getText());
+            pstmt.setString(3, txtCedula.getText());
+            pstmt.setString(4, txtEmail.getText());
+            pstmt.setString(5, txtTelefono.getText());
+            pstmt.setString(6, txtDireccion.getText());
+            pstmt.setInt(7, Integer.parseInt(txtIdSucursal.getText()));
+            pstmt.setInt(8, Integer.parseInt(txtIdCliente.getText()));
+
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows > 0) {
+                 JOptionPane.showMessageDialog(this, "Cliente modificado exitosamente.");
+                 cargarDatosClientes();
+                 limpiarCampos();
+            } else {
+                 JOptionPane.showMessageDialog(this, "No se encontró el cliente para modificar.", "Error de Modificación", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+            JOptionPane.showMessageDialog(this, "Error al modificar el cliente: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -182,16 +210,21 @@ public class VentanaClientes extends JFrame {
         }
         int res = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este cliente?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (res == JOptionPane.YES_OPTION) {
-            String idCliente = txtIdCliente.getText();
-            String sql = "DELETE FROM CLIENTE WHERE ID_Cliente = " + idCliente;
-            if (dbConnector.executeUpdate(sql)) {
-                JOptionPane.showMessageDialog(this, "Cliente eliminado exitosamente.");
-                // --- REGISTRO DE AUDITORÍA ---
-                dbConnector.registrarAuditoria("CLIENTE", "DELETE", idCliente, "Registro eliminado");
-                cargarDatosClientes();
-                limpiarCampos();
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar el cliente.");
+            // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
+            String sql = "DELETE FROM CLIENTE WHERE idCliente = ?";
+            try (Connection conn = dbConnector.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                
+                pstmt.setInt(1, Integer.parseInt(txtIdCliente.getText()));
+                int affectedRows = pstmt.executeUpdate();
+
+                if (affectedRows > 0) {
+                    JOptionPane.showMessageDialog(this, "Cliente eliminado exitosamente.");
+                    cargarDatosClientes();
+                    limpiarCampos();
+                }
+            } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el cliente: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -225,10 +258,5 @@ public class VentanaClientes extends JFrame {
         boton.setForeground(Color.WHITE);
         boton.setFont(new Font("Arial", Font.BOLD, 14));
         return boton;
-    }
-
-    private void cargarDatosClientes() {
-        String sql = "SELECT ID_Cliente, Nombre, Apellido, Cedula, Email, Telefono, Direccion, ID_Sucursal FROM CLIENTE ORDER BY ID_Cliente";
-        tablaClientes.setModel(dbConnector.query(sql));
     }
 }

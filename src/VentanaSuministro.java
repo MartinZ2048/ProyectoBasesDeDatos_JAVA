@@ -20,8 +20,6 @@ public class VentanaSuministro extends JFrame {
 
     private final DatabaseConnector dbConnector;
     private JTable tablaSuministros;
-
-    // --- Componentes del Formulario ---
     private JTextField txtIdSuministro, txtIdProveedor, txtIdLibro, txtCantidad, txtFecha;
 
     public VentanaSuministro() {
@@ -72,7 +70,7 @@ public class VentanaSuministro extends JFrame {
         txtIdLibro = crearCampo(panelDatos, "ID Libro:", 160);
         txtCantidad = crearCampo(panelDatos, "Cantidad:", 210);
         txtFecha = crearCampo(panelDatos, "Fecha:", 260);
-        txtFecha.setEditable(false); // La fecha es manejada por la BD
+        txtFecha.setEditable(false);
 
         JPanel panelBotones = new JPanel();
         panelBotones.setLayout(null);

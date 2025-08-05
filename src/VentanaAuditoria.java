@@ -61,12 +61,12 @@ public class VentanaAuditoria extends JFrame {
     }
 
     private void cargarDatosAuditoria() {
-        // Consulta para mostrar los datos de auditoría más recientes primero
+        // --- CORRECCIÓN: Se usan los nombres de columna del script SQL (tablaAfectada, idRegistro) ---
         String sql = "SELECT usuario AS \"USER_NAME\", " +
                      "TO_CHAR(fecha, 'YYYY-MM-DD HH24:MI:SS') AS \"FECHA\", " +
                      "operacion AS \"TIPO_OPERACION\", " +
-                     "tabla_afectada AS \"NOMBRE_TABLE\", " +
-                     "id_registro AS \"ID_REGISTRO\" " +
+                     "tablaAfectada AS \"NOMBRE_TABLE\", " +
+                     "idRegistro AS \"ID_REGISTRO\" " +
                      "FROM AUDITORIA ORDER BY fecha DESC";
         tablaAuditoria.setModel(dbConnector.query(sql));
     }

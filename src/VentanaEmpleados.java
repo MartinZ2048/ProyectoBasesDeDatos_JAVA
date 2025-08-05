@@ -2,6 +2,9 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -12,7 +15,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 public class VentanaEmpleados extends JFrame {
@@ -102,10 +104,16 @@ public class VentanaEmpleados extends JFrame {
                     txtCedula.setText(tablaEmpleados.getValueAt(fila, 3).toString());
                     txtCargo.setText(tablaEmpleados.getValueAt(fila, 4) != null ? tablaEmpleados.getValueAt(fila, 4).toString() : "");
                     txtEmail.setText(tablaEmpleados.getValueAt(fila, 5) != null ? tablaEmpleados.getValueAt(fila, 5).toString() : "");
-                    txtIdSucursal.setText(tablaEmpleados.getValueAt(fila, 6) != null ? tablaEmpleados.getValueAt(fila, 6).toString() : "");
+                    txtIdSucursal.setText(tablaEmpleados.getValueAt(fila, 6).toString());
                 }
             }
         });
+    }
+    
+    private void cargarDatosEmpleados() {
+        // --- CORRECCIÓN: Se usan los nombres de columna del script SQL (idEmpleado, idSucursal, etc.) ---
+        String sql = "SELECT idEmpleado, nombre, apellido, cedula, cargo, email, idSucursal FROM EMPLEADO ORDER BY idEmpleado";
+        tablaEmpleados.setModel(dbConnector.query(sql));
     }
 
     private boolean validarCampos() {
@@ -126,19 +134,27 @@ public class VentanaEmpleados extends JFrame {
 
     private void agregarEmpleado() {
         if (!validarCampos()) return;
-        String datosNuevos = String.format("Nombre: %s, Apellido: %s, Cedula: %s", txtNombre.getText(), txtApellido.getText(), txtCedula.getText());
-        String sql = String.format(
-            "INSERT INTO EMPLEADO (ID_Empleado, Nombre, Apellido, Cedula, Cargo, Email, ID_Sucursal) VALUES ((SELECT NVL(MAX(ID_Empleado), 0) + 1 FROM EMPLEADO), '%s', '%s', '%s', '%s', '%s', %s)",
-            txtNombre.getText(), txtApellido.getText(), txtCedula.getText(), txtCargo.getText(), txtEmail.getText(), txtIdSucursal.getText()
-        );
-        if (dbConnector.executeUpdate(sql)) {
+        
+        // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
+        String sql = "INSERT INTO EMPLEADO (idEmpleado, nombre, apellido, cedula, cargo, email, idSucursal) VALUES ((SELECT NVL(MAX(idEmpleado), 0) + 1 FROM EMPLEADO), ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = dbConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, txtNombre.getText());
+            pstmt.setString(2, txtApellido.getText());
+            pstmt.setString(3, txtCedula.getText());
+            pstmt.setString(4, txtCargo.getText());
+            pstmt.setString(5, txtEmail.getText());
+            pstmt.setInt(6, Integer.parseInt(txtIdSucursal.getText()));
+            
+            pstmt.executeUpdate();
             JOptionPane.showMessageDialog(this, "Empleado agregado exitosamente.");
-            // --- REGISTRO DE AUDITORÍA ---
-            dbConnector.registrarAuditoria("EMPLEADO", "INSERT", "Nuevo", datosNuevos);
             cargarDatosEmpleados();
             limpiarCampos();
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al agregar el empleado.");
+
+        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+            JOptionPane.showMessageDialog(this, "Error al agregar el empleado: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -148,19 +164,31 @@ public class VentanaEmpleados extends JFrame {
             return;
         }
         if (!validarCampos()) return;
-        String datosNuevos = String.format("Nombre: %s, Apellido: %s, Cedula: %s", txtNombre.getText(), txtApellido.getText(), txtCedula.getText());
-        String sql = String.format(
-            "UPDATE EMPLEADO SET Nombre = '%s', Apellido = '%s', Cedula = '%s', Cargo = '%s', Email = '%s', ID_Sucursal = %s WHERE ID_Empleado = %s",
-            txtNombre.getText(), txtApellido.getText(), txtCedula.getText(), txtCargo.getText(), txtEmail.getText(), txtIdSucursal.getText(), txtIdEmpleado.getText()
-        );
-        if (dbConnector.executeUpdate(sql)) {
-            JOptionPane.showMessageDialog(this, "Empleado modificado exitosamente.");
-            // --- REGISTRO DE AUDITORÍA ---
-            dbConnector.registrarAuditoria("EMPLEADO", "UPDATE", txtIdEmpleado.getText(), datosNuevos);
-            cargarDatosEmpleados();
-            limpiarCampos();
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al modificar el empleado.");
+        
+        // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
+        String sql = "UPDATE EMPLEADO SET nombre = ?, apellido = ?, cedula = ?, cargo = ?, email = ?, idSucursal = ? WHERE idEmpleado = ?";
+        
+        try (Connection conn = dbConnector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, txtNombre.getText());
+            pstmt.setString(2, txtApellido.getText());
+            pstmt.setString(3, txtCedula.getText());
+            pstmt.setString(4, txtCargo.getText());
+            pstmt.setString(5, txtEmail.getText());
+            pstmt.setInt(6, Integer.parseInt(txtIdSucursal.getText()));
+            pstmt.setInt(7, Integer.parseInt(txtIdEmpleado.getText()));
+
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows > 0) {
+                 JOptionPane.showMessageDialog(this, "Empleado modificado exitosamente.");
+                 cargarDatosEmpleados();
+                 limpiarCampos();
+            } else {
+                 JOptionPane.showMessageDialog(this, "No se encontró el empleado para modificar.", "Error de Modificación", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+            JOptionPane.showMessageDialog(this, "Error al modificar el empleado: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -171,16 +199,21 @@ public class VentanaEmpleados extends JFrame {
         }
         int res = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este empleado?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (res == JOptionPane.YES_OPTION) {
-            String idEmpleado = txtIdEmpleado.getText();
-            String sql = "DELETE FROM EMPLEADO WHERE ID_Empleado = " + idEmpleado;
-            if (dbConnector.executeUpdate(sql)) {
-                JOptionPane.showMessageDialog(this, "Empleado eliminado exitosamente.");
-                // --- REGISTRO DE AUDITORÍA ---
-                dbConnector.registrarAuditoria("EMPLEADO", "DELETE", idEmpleado, "Registro eliminado");
-                cargarDatosEmpleados();
-                limpiarCampos();
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar el empleado.");
+            // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
+            String sql = "DELETE FROM EMPLEADO WHERE idEmpleado = ?";
+            try (Connection conn = dbConnector.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                
+                pstmt.setInt(1, Integer.parseInt(txtIdEmpleado.getText()));
+                int affectedRows = pstmt.executeUpdate();
+
+                if (affectedRows > 0) {
+                    JOptionPane.showMessageDialog(this, "Empleado eliminado exitosamente.");
+                    cargarDatosEmpleados();
+                    limpiarCampos();
+                }
+            } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el empleado: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -213,10 +246,5 @@ public class VentanaEmpleados extends JFrame {
         boton.setForeground(Color.WHITE);
         boton.setFont(new Font("Arial", Font.BOLD, 14));
         return boton;
-    }
-
-    private void cargarDatosEmpleados() {
-        String sql = "SELECT ID_Empleado, Nombre, Apellido, Cedula, Cargo, Email, ID_Sucursal FROM EMPLEADO ORDER BY ID_Empleado";
-        tablaEmpleados.setModel(dbConnector.query(sql));
     }
 }

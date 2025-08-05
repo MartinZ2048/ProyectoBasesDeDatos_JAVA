@@ -20,8 +20,6 @@ public class VentanaProveedores extends JFrame {
 
     private final DatabaseConnector dbConnector;
     private JTable tablaProveedores;
-
-    // --- Componentes del Formulario ---
     private JTextField txtIdProveedor, txtNombre, txtContacto, txtTelefono, txtEmail, txtDireccion;
 
     public VentanaProveedores() {
