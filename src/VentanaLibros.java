@@ -20,7 +20,9 @@ public class VentanaLibros extends JFrame {
 
     private final DatabaseConnector dbConnector;
     private JTable tablaLibros;
-    private JTextField txtIdLibro, txtTitulo, txtIsbn, txtAutor, txtEditorial, txtPrecio;
+
+    // --- Componentes del Formulario (con el nuevo campo idSucursal) ---
+    private JTextField txtIdLibro, txtTitulo, txtIsbn, txtAutor, txtEditorial, txtPrecio, txtIdSucursal;
 
     public VentanaLibros() {
         dbConnector = new DatabaseConnector();
@@ -36,7 +38,8 @@ public class VentanaLibros extends JFrame {
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(245, 245, 245));
 
-        JLabel lblTituloVentana = new JLabel("\"LIBROS\" - Quicentro", JLabel.CENTER);
+        // --- Título Superior (ajustado a la imagen de referencia) ---
+        JLabel lblTituloVentana = new JLabel("Libros - Quicentro", JLabel.CENTER);
         lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
         lblTituloVentana.setBounds(10, 10, 1160, 30);
         getContentPane().add(lblTituloVentana);
@@ -64,6 +67,7 @@ public class VentanaLibros extends JFrame {
         lblDatosTitulo.setBounds(10, 10, 360, 25);
         panelDatos.add(lblDatosTitulo);
 
+        // --- Creación de campos de texto, incluyendo idSucursal ---
         txtIdLibro = crearCampo(panelDatos, "ID Libro:", 60);
         txtIdLibro.setEditable(false);
         txtTitulo = crearCampo(panelDatos, "Título:", 110);
@@ -71,6 +75,7 @@ public class VentanaLibros extends JFrame {
         txtAutor = crearCampo(panelDatos, "Autor:", 210);
         txtEditorial = crearCampo(panelDatos, "Editorial:", 260);
         txtPrecio = crearCampo(panelDatos, "Precio:", 310);
+        txtIdSucursal = crearCampo(panelDatos, "ID Sucursal:", 360); // <-- NUEVO CAMPO
 
         JPanel panelBotones = new JPanel();
         panelBotones.setLayout(null);
@@ -104,41 +109,54 @@ public class VentanaLibros extends JFrame {
                     txtAutor.setText(tablaLibros.getValueAt(filaSeleccionada, 3) != null ? tablaLibros.getValueAt(filaSeleccionada, 3).toString() : "");
                     txtEditorial.setText(tablaLibros.getValueAt(filaSeleccionada, 4) != null ? tablaLibros.getValueAt(filaSeleccionada, 4).toString() : "");
                     txtPrecio.setText(tablaLibros.getValueAt(filaSeleccionada, 5) != null ? tablaLibros.getValueAt(filaSeleccionada, 5).toString() : "");
+                    txtIdSucursal.setText(tablaLibros.getValueAt(filaSeleccionada, 6).toString()); // <-- OBTENER NUEVO CAMPO
                 }
             }
         });
     }
 
     private void cargarDatosLibros() {
-        String sql = "SELECT idLibro, titulo, isbn, autor, editorial, precio FROM LIBRO ORDER BY idLibro";
+        // --- CORRECCIÓN: La consulta ahora incluye idSucursal ---
+        String sql = "SELECT idLibro, titulo, isbn, autor, editorial, precio, idSucursal FROM LIBRO ORDER BY idLibro";
         tablaLibros.setModel(dbConnector.query(sql));
     }
 
     private void agregarLibro() {
-        if (txtTitulo.getText().trim().isEmpty() || txtPrecio.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Título y Precio son campos obligatorios.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+        if (txtTitulo.getText().trim().isEmpty() || txtPrecio.getText().trim().isEmpty() || txtIdSucursal.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Título, Precio e ID Sucursal son campos obligatorios.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        String sql = "INSERT INTO LIBRO (idLibro, titulo, isbn, autor, editorial, precio) VALUES ((SELECT NVL(MAX(idLibro), 0) + 1 FROM LIBRO), ?, ?, ?, ?, ?)";
-        
-        try (Connection conn = dbConnector.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, txtTitulo.getText());
-            pstmt.setString(2, txtIsbn.getText());
-            pstmt.setString(3, txtAutor.getText());
-            pstmt.setString(4, txtEditorial.getText());
-            pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText()));
+        // --- CORRECCIÓN: La consulta INSERT ahora incluye idSucursal ---
+        String sql = "INSERT INTO LIBRO (idLibro, titulo, isbn, autor, editorial, precio, idSucursal) VALUES ((SELECT NVL(MAX(idLibro), 0) + 1 FROM LIBRO), ?, ?, ?, ?, ?, ?)";
+        Connection conn = null;
+        try {
+            conn = dbConnector.getConnection();
+            conn.setAutoCommit(false);
 
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                JOptionPane.showMessageDialog(this, "Libro agregado exitosamente.");
-                cargarDatosLibros();
-                limpiarCampos();
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, txtTitulo.getText());
+                pstmt.setString(2, txtIsbn.getText());
+                pstmt.setString(3, txtAutor.getText());
+                pstmt.setString(4, txtEditorial.getText());
+                pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText()));
+                pstmt.setInt(6, Integer.parseInt(txtIdSucursal.getText()));
+
+                int affectedRows = pstmt.executeUpdate();
+                if (affectedRows > 0) {
+                    conn.commit(); // --- Realizar COMMIT explícito ---
+                    JOptionPane.showMessageDialog(this, "Libro agregado exitosamente.");
+                    cargarDatosLibros();
+                    limpiarCampos();
+                } else {
+                    conn.rollback();
+                }
             }
         } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+            try { if (conn != null) conn.rollback(); } catch (SQLException e) { e.printStackTrace(); }
             JOptionPane.showMessageDialog(this, "Error al agregar el libro: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException e) { e.printStackTrace(); }
         }
     }
 
@@ -148,28 +166,38 @@ public class VentanaLibros extends JFrame {
             return;
         }
 
-        String sql = "UPDATE LIBRO SET titulo = ?, isbn = ?, autor = ?, editorial = ?, precio = ? WHERE idLibro = ?";
+        // --- CORRECCIÓN: La consulta UPDATE ahora incluye idSucursal ---
+        String sql = "UPDATE LIBRO SET titulo = ?, isbn = ?, autor = ?, editorial = ?, precio = ?, idSucursal = ? WHERE idLibro = ?";
+        Connection conn = null;
+        try {
+            conn = dbConnector.getConnection();
+            conn.setAutoCommit(false);
 
-        try (Connection conn = dbConnector.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, txtTitulo.getText());
+                pstmt.setString(2, txtIsbn.getText());
+                pstmt.setString(3, txtAutor.getText());
+                pstmt.setString(4, txtEditorial.getText());
+                pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText()));
+                pstmt.setInt(6, Integer.parseInt(txtIdSucursal.getText()));
+                pstmt.setInt(7, Integer.parseInt(txtIdLibro.getText()));
 
-            pstmt.setString(1, txtTitulo.getText());
-            pstmt.setString(2, txtIsbn.getText());
-            pstmt.setString(3, txtAutor.getText());
-            pstmt.setString(4, txtEditorial.getText());
-            pstmt.setDouble(5, Double.parseDouble(txtPrecio.getText()));
-            pstmt.setInt(6, Integer.parseInt(txtIdLibro.getText()));
-
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                JOptionPane.showMessageDialog(this, "Libro modificado exitosamente.");
-                cargarDatosLibros();
-                limpiarCampos();
-            } else {
-                JOptionPane.showMessageDialog(this, "No se encontró el libro para modificar.", "Error de Modificación", JOptionPane.WARNING_MESSAGE);
+                int affectedRows = pstmt.executeUpdate();
+                if (affectedRows > 0) {
+                    conn.commit(); // --- Realizar COMMIT explícito ---
+                    JOptionPane.showMessageDialog(this, "Libro modificado exitosamente.");
+                    cargarDatosLibros();
+                    limpiarCampos();
+                } else {
+                    conn.rollback();
+                    JOptionPane.showMessageDialog(this, "No se encontró el libro para modificar.", "Error de Modificación", JOptionPane.WARNING_MESSAGE);
+                }
             }
         } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+            try { if (conn != null) conn.rollback(); } catch (SQLException e) { e.printStackTrace(); }
             JOptionPane.showMessageDialog(this, "Error al modificar el libro: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException e) { e.printStackTrace(); }
         }
     }
 
@@ -182,19 +210,28 @@ public class VentanaLibros extends JFrame {
         int confirmacion = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este libro?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (confirmacion == JOptionPane.YES_OPTION) {
             String sql = "DELETE FROM LIBRO WHERE idLibro = ?";
-            try (Connection conn = dbConnector.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            Connection conn = null;
+            try {
+                conn = dbConnector.getConnection();
+                conn.setAutoCommit(false);
                 
-                pstmt.setInt(1, Integer.parseInt(txtIdLibro.getText()));
-
-                int affectedRows = pstmt.executeUpdate();
-                if (affectedRows > 0) {
-                    JOptionPane.showMessageDialog(this, "Libro eliminado exitosamente.");
-                    cargarDatosLibros();
-                    limpiarCampos();
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setInt(1, Integer.parseInt(txtIdLibro.getText()));
+                    int affectedRows = pstmt.executeUpdate();
+                    if (affectedRows > 0) {
+                        conn.commit(); // --- Realizar COMMIT explícito ---
+                        JOptionPane.showMessageDialog(this, "Libro eliminado exitosamente.");
+                        cargarDatosLibros();
+                        limpiarCampos();
+                    } else {
+                        conn.rollback();
+                    }
                 }
             } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
+                try { if (conn != null) conn.rollback(); } catch (SQLException e) { e.printStackTrace(); }
                 JOptionPane.showMessageDialog(this, "Error al eliminar el libro: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+            } finally {
+                try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException e) { e.printStackTrace(); }
             }
         }
     }
@@ -206,6 +243,7 @@ public class VentanaLibros extends JFrame {
         txtAutor.setText("");
         txtEditorial.setText("");
         txtPrecio.setText("");
+        txtIdSucursal.setText(""); // <-- LIMPIAR NUEVO CAMPO
         tablaLibros.clearSelection();
     }
 
