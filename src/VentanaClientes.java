@@ -39,83 +39,95 @@ public class VentanaClientes extends JFrame {
         setSize(1200, 700);
         setLocationRelativeTo(null);
         getContentPane().setLayout(null);
-        getContentPane().setBackground(new Color(236, 236, 236));
+        getContentPane().setBackground(new Color(245, 245, 245));
 
-        JLabel lblTitulo = new JLabel("CLIENTES - QUICENTRO");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
-        lblTitulo.setBounds(20, 20, 400, 30);
-        getContentPane().add(lblTitulo);
+        // --- Título Superior ---
+        JLabel lblTituloVentana = new JLabel("CLIENTES - Quicentro", JLabel.CENTER);
+        lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
+        lblTituloVentana.setBounds(10, 10, 1160, 30);
+        getContentPane().add(lblTituloVentana);
 
+        // --- Panel Izquierdo (Tabla) ---
         JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBounds(20, 60, 750, 580);
+        scrollPane.setBounds(20, 50, 750, 500);
         getContentPane().add(scrollPane);
 
         tablaClientes = new JTable();
         tablaClientes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JTableHeader tableHeader = tablaClientes.getTableHeader();
         tableHeader.setFont(new Font("Arial", Font.BOLD, 12));
-        tableHeader.setBackground(new Color(0, 122, 204));
+        tableHeader.setBackground(new Color(60, 60, 60));
         tableHeader.setForeground(Color.WHITE);
         scrollPane.setViewportView(tablaClientes);
 
+        // --- Panel Derecho (Formulario de Datos) ---
         JPanel panelDatos = new JPanel();
-        panelDatos.setBackground(new Color(236, 236, 236));
-        panelDatos.setBounds(780, 20, 380, 620);
+        panelDatos.setBackground(new Color(245, 245, 245));
+        panelDatos.setBounds(780, 50, 380, 500);
         panelDatos.setLayout(null);
         getContentPane().add(panelDatos);
 
-        JLabel lblDatosTitulo = new JLabel("Datos del Cliente");
-        lblDatosTitulo.setFont(new Font("Arial", Font.BOLD, 20));
-        lblDatosTitulo.setBounds(10, 10, 200, 25);
+        JLabel lblDatosTitulo = new JLabel("Datos", JLabel.CENTER);
+        lblDatosTitulo.setFont(new Font("Arial", Font.BOLD, 22));
+        lblDatosTitulo.setBounds(10, 10, 360, 25);
         panelDatos.add(lblDatosTitulo);
 
-        txtIdCliente = crearCampo(panelDatos, "ID Cliente", 60);
+        txtIdCliente = crearCampo(panelDatos, "ID Cliente:", 60);
         txtIdCliente.setEditable(false);
-        txtNombre = crearCampo(panelDatos, "Nombre", 110);
-        txtApellido = crearCampo(panelDatos, "Apellido", 160);
-        txtCedula = crearCampo(panelDatos, "Cédula", 210);
-        txtEmail = crearCampo(panelDatos, "Email", 260);
-        txtTelefono = crearCampo(panelDatos, "Teléfono", 310);
-        txtDireccion = crearCampo(panelDatos, "Dirección", 360);
-        txtIdSucursal = crearCampo(panelDatos, "ID Sucursal", 410);
+        txtNombre = crearCampo(panelDatos, "Nombre:", 110);
+        txtApellido = crearCampo(panelDatos, "Apellido:", 160);
+        txtCedula = crearCampo(panelDatos, "Cédula:", 210);
+        txtEmail = crearCampo(panelDatos, "Email:", 260);
+        txtTelefono = crearCampo(panelDatos, "Teléfono:", 310);
+        txtDireccion = crearCampo(panelDatos, "Dirección:", 360);
+        txtIdSucursal = crearCampo(panelDatos, "ID Sucursal:", 410);
 
-        JButton btnAgregar = crearBoton("Agregar", 10, 480, new Color(40, 167, 69));
-        JButton btnModificar = crearBoton("Modificar", 170, 480, new Color(255, 193, 7));
-        JButton btnEliminar = crearBoton("Eliminar", 10, 530, new Color(220, 53, 69));
-        JButton btnNuevo = crearBoton("Limpiar", 170, 530, new Color(108, 117, 125));
-        JButton btnRegresar = crearBoton("Regresar", 10, 580, new Color(0, 123, 255));
+        // --- Panel Inferior (Botonera) ---
+        JPanel panelBotones = new JPanel();
+        panelBotones.setLayout(null);
+        panelBotones.setBounds(20, 560, 1140, 80);
+        panelBotones.setBackground(new Color(245, 245, 245));
+        getContentPane().add(panelBotones);
         
-        panelDatos.add(btnAgregar);
-        panelDatos.add(btnModificar);
-        panelDatos.add(btnEliminar);
-        panelDatos.add(btnNuevo);
-        panelDatos.add(btnRegresar);
+        // --- CORRECCIÓN: Nueva disposición y colores de botones ---
+        JButton btnAgregar = crearBoton("Agregar", 120, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 290, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnLimpiar = crearBoton("Limpiar", 460, 10, new Color(173, 216, 230), Color.BLACK); // Azul claro
+        JButton btnEliminar = crearBoton("Eliminar", 630, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 950, 10, new Color(255, 165, 0), Color.WHITE);
 
-        btnNuevo.addActionListener(e -> limpiarCampos());
+        panelBotones.add(btnAgregar);
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnLimpiar);
+        panelBotones.add(btnEliminar);
+        panelBotones.add(btnRegresar);
+
+        // --- Action Listeners ---
         btnAgregar.addActionListener(e -> agregarCliente());
         btnModificar.addActionListener(e -> modificarCliente());
+        btnLimpiar.addActionListener(e -> limpiarCampos());
         btnEliminar.addActionListener(e -> eliminarCliente());
         btnRegresar.addActionListener(e -> this.dispose());
 
         tablaClientes.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
-                int fila = tablaClientes.getSelectedRow();
-                if (fila != -1) {
-                    txtIdCliente.setText(tablaClientes.getValueAt(fila, 0).toString());
-                    txtNombre.setText(tablaClientes.getValueAt(fila, 1).toString());
-                    txtApellido.setText(tablaClientes.getValueAt(fila, 2).toString());
-                    txtCedula.setText(tablaClientes.getValueAt(fila, 3).toString());
-                    txtEmail.setText(tablaClientes.getValueAt(fila, 4) != null ? tablaClientes.getValueAt(fila, 4).toString() : "");
-                    txtTelefono.setText(tablaClientes.getValueAt(fila, 5) != null ? tablaClientes.getValueAt(fila, 5).toString() : "");
-                    txtDireccion.setText(tablaClientes.getValueAt(fila, 6) != null ? tablaClientes.getValueAt(fila, 6).toString() : "");
-                    txtIdSucursal.setText(tablaClientes.getValueAt(fila, 7).toString());
+                int filaSeleccionada = tablaClientes.getSelectedRow();
+                if (filaSeleccionada != -1) {
+                    txtIdCliente.setText(tablaClientes.getValueAt(filaSeleccionada, 0).toString());
+                    txtNombre.setText(tablaClientes.getValueAt(filaSeleccionada, 1).toString());
+                    txtApellido.setText(tablaClientes.getValueAt(filaSeleccionada, 2).toString());
+                    txtCedula.setText(tablaClientes.getValueAt(filaSeleccionada, 3).toString());
+                    txtEmail.setText(tablaClientes.getValueAt(filaSeleccionada, 4) != null ? tablaClientes.getValueAt(filaSeleccionada, 4).toString() : "");
+                    txtTelefono.setText(tablaClientes.getValueAt(filaSeleccionada, 5) != null ? tablaClientes.getValueAt(filaSeleccionada, 5).toString() : "");
+                    txtDireccion.setText(tablaClientes.getValueAt(filaSeleccionada, 6) != null ? tablaClientes.getValueAt(filaSeleccionada, 6).toString() : "");
+                    txtIdSucursal.setText(tablaClientes.getValueAt(filaSeleccionada, 7).toString());
                 }
             }
         });
     }
     
     private void cargarDatosClientes() {
-        // --- CORRECCIÓN: Se usan los nombres de columna del script SQL (idCliente, idSucursal, etc.) ---
         String sql = "SELECT idCliente, nombre, apellido, cedula, email, telefono, direccion, idSucursal FROM CLIENTE ORDER BY idCliente";
         tablaClientes.setModel(dbConnector.query(sql));
     }
@@ -143,7 +155,6 @@ public class VentanaClientes extends JFrame {
     private void agregarCliente() {
         if (!validarCampos()) return;
         
-        // --- CORRECCIÓN: Se usan PreparedStatement para seguridad y nombres de columna correctos ---
         String sql = "INSERT INTO CLIENTE (idCliente, nombre, apellido, cedula, email, telefono, direccion, idSucursal) VALUES ((SELECT NVL(MAX(idCliente), 0) + 1 FROM CLIENTE), ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = dbConnector.getConnection();
@@ -159,7 +170,6 @@ public class VentanaClientes extends JFrame {
             
             pstmt.executeUpdate();
             JOptionPane.showMessageDialog(this, "Cliente agregado exitosamente.");
-            // La auditoría ahora es manejada por el TRIGGER de la base de datos.
             cargarDatosClientes();
             limpiarCampos();
             
@@ -175,7 +185,6 @@ public class VentanaClientes extends JFrame {
         }
         if (!validarCampos()) return;
         
-        // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
         String sql = "UPDATE CLIENTE SET nombre = ?, apellido = ?, cedula = ?, email = ?, telefono = ?, direccion = ?, idSucursal = ? WHERE idCliente = ?";
         
         try (Connection conn = dbConnector.getConnection();
@@ -210,7 +219,6 @@ public class VentanaClientes extends JFrame {
         }
         int res = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este cliente?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (res == JOptionPane.YES_OPTION) {
-            // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
             String sql = "DELETE FROM CLIENTE WHERE idCliente = ?";
             try (Connection conn = dbConnector.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -242,8 +250,9 @@ public class VentanaClientes extends JFrame {
     }
 
     private JTextField crearCampo(JPanel panel, String etiqueta, int y) {
-        JLabel lbl = new JLabel(etiqueta + ":");
+        JLabel lbl = new JLabel(etiqueta);
         lbl.setBounds(10, y, 120, 25);
+        lbl.setFont(new Font("Arial", Font.PLAIN, 14));
         panel.add(lbl);
         JTextField txt = new JTextField();
         txt.setBounds(140, y, 220, 25);
@@ -251,12 +260,13 @@ public class VentanaClientes extends JFrame {
         return txt;
     }
 
-    private JButton crearBoton(String texto, int x, int y, Color color) {
+    private JButton crearBoton(String texto, int x, int y, Color colorFondo, Color colorTexto) {
         JButton boton = new JButton(texto);
         boton.setBounds(x, y, 150, 40);
-        boton.setBackground(color);
-        boton.setForeground(Color.WHITE);
+        boton.setBackground(colorFondo);
+        boton.setForeground(colorTexto);
         boton.setFont(new Font("Arial", Font.BOLD, 14));
+        boton.setFocusPainted(false);
         return boton;
     }
 }

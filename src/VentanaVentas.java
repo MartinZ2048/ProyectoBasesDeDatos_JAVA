@@ -36,7 +36,7 @@ public class VentanaVentas extends JFrame {
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(245, 245, 245));
 
-        JLabel lblTituloVentana = new JLabel("\"VENTAS\" - Quicentro", JLabel.CENTER);
+        JLabel lblTituloVentana = new JLabel("VENTAS - Quicentro", JLabel.CENTER);
         lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
         lblTituloVentana.setBounds(10, 10, 1160, 30);
         getContentPane().add(lblTituloVentana);
@@ -79,18 +79,21 @@ public class VentanaVentas extends JFrame {
         panelBotones.setBackground(new Color(245, 245, 245));
         getContentPane().add(panelBotones);
         
-        JButton btnAgregar = crearBoton("Agregar", 200, 10, new Color(144, 238, 144), Color.BLACK);
-        JButton btnModificar = crearBoton("Modificar", 400, 10, new Color(255, 255, 0), Color.BLACK);
-        JButton btnEliminar = crearBoton("Eliminar", 600, 10, new Color(255, 99, 71), Color.WHITE);
-        JButton btnRegresar = crearBoton("Regresar", 800, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnAgregar = crearBoton("Agregar", 120, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 290, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnLimpiar = crearBoton("Limpiar", 460, 10, new Color(173, 216, 230), Color.BLACK);
+        JButton btnEliminar = crearBoton("Eliminar", 630, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 950, 10, new Color(255, 165, 0), Color.WHITE);
 
         panelBotones.add(btnAgregar);
         panelBotones.add(btnModificar);
+        panelBotones.add(btnLimpiar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnRegresar);
 
         btnAgregar.addActionListener(e -> agregarVenta());
         btnModificar.addActionListener(e -> modificarVenta());
+        btnLimpiar.addActionListener(e -> limpiarCampos());
         btnEliminar.addActionListener(e -> eliminarVenta());
         btnRegresar.addActionListener(e -> this.dispose());
 

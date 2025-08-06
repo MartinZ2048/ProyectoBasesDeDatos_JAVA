@@ -37,15 +37,15 @@ public class VentanaEmpleados extends JFrame {
         setSize(1200, 700);
         setLocationRelativeTo(null);
         getContentPane().setLayout(null);
-        getContentPane().setBackground(new Color(236, 236, 236));
+        getContentPane().setBackground(new Color(245, 245, 245));
 
-        JLabel lblTitulo = new JLabel("EMPLEADOS - QUITOCENTRO");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
-        lblTitulo.setBounds(20, 20, 400, 30);
-        getContentPane().add(lblTitulo);
+        JLabel lblTituloVentana = new JLabel("EMPLEADOS - Quicentro", JLabel.CENTER);
+        lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
+        lblTituloVentana.setBounds(10, 10, 1160, 30);
+        getContentPane().add(lblTituloVentana);
 
         JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setBounds(20, 60, 750, 580);
+        scrollPane.setBounds(20, 50, 750, 500);
         getContentPane().add(scrollPane);
 
         tablaEmpleados = new JTable();
@@ -57,40 +57,46 @@ public class VentanaEmpleados extends JFrame {
         scrollPane.setViewportView(tablaEmpleados);
 
         JPanel panelDatos = new JPanel();
-        panelDatos.setBackground(new Color(236, 236, 236));
-        panelDatos.setBounds(780, 20, 380, 620);
+        panelDatos.setBackground(new Color(245, 245, 245));
+        panelDatos.setBounds(780, 50, 380, 500);
         panelDatos.setLayout(null);
         getContentPane().add(panelDatos);
 
-        JLabel lblDatosTitulo = new JLabel("Datos del Empleado");
-        lblDatosTitulo.setFont(new Font("Arial", Font.BOLD, 20));
-        lblDatosTitulo.setBounds(10, 10, 200, 25);
+        JLabel lblDatosTitulo = new JLabel("Datos", JLabel.CENTER);
+        lblDatosTitulo.setFont(new Font("Arial", Font.BOLD, 22));
+        lblDatosTitulo.setBounds(10, 10, 360, 25);
         panelDatos.add(lblDatosTitulo);
 
-        txtIdEmpleado = crearCampo(panelDatos, "ID Empleado", 60);
+        txtIdEmpleado = crearCampo(panelDatos, "ID Empleado:", 60);
         txtIdEmpleado.setEditable(false);
-        txtNombre = crearCampo(panelDatos, "Nombre", 110);
-        txtApellido = crearCampo(panelDatos, "Apellido", 160);
-        txtCedula = crearCampo(panelDatos, "Cédula", 210);
-        txtCargo = crearCampo(panelDatos, "Cargo", 260);
-        txtEmail = crearCampo(panelDatos, "Email", 310);
-        txtIdSucursal = crearCampo(panelDatos, "ID Sucursal", 360);
+        txtNombre = crearCampo(panelDatos, "Nombre:", 110);
+        txtApellido = crearCampo(panelDatos, "Apellido:", 160);
+        txtCedula = crearCampo(panelDatos, "Cédula:", 210);
+        txtCargo = crearCampo(panelDatos, "Cargo:", 260);
+        txtEmail = crearCampo(panelDatos, "Email:", 310);
+        txtIdSucursal = crearCampo(panelDatos, "ID Sucursal:", 360);
 
-        JButton btnAgregar = crearBoton("Agregar", 10, 480, new Color(40, 167, 69));
-        JButton btnModificar = crearBoton("Modificar", 170, 480, new Color(255, 193, 7));
-        JButton btnEliminar = crearBoton("Eliminar", 10, 530, new Color(220, 53, 69));
-        JButton btnNuevo = crearBoton("Limpiar", 170, 530, new Color(108, 117, 125));
-        JButton btnRegresar = crearBoton("Regresar", 10, 580, new Color(0, 123, 255));
+        JPanel panelBotones = new JPanel();
+        panelBotones.setLayout(null);
+        panelBotones.setBounds(20, 560, 1140, 80);
+        panelBotones.setBackground(new Color(245, 245, 245));
+        getContentPane().add(panelBotones);
+        
+        JButton btnAgregar = crearBoton("Agregar", 120, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 290, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnLimpiar = crearBoton("Limpiar", 460, 10, new Color(173, 216, 230), Color.BLACK);
+        JButton btnEliminar = crearBoton("Eliminar", 630, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 950, 10, new Color(255, 165, 0), Color.WHITE);
 
-        panelDatos.add(btnAgregar);
-        panelDatos.add(btnModificar);
-        panelDatos.add(btnEliminar);
-        panelDatos.add(btnNuevo);
-        panelDatos.add(btnRegresar);
+        panelBotones.add(btnAgregar);
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnLimpiar);
+        panelBotones.add(btnEliminar);
+        panelBotones.add(btnRegresar);
 
-        btnNuevo.addActionListener(e -> limpiarCampos());
         btnAgregar.addActionListener(e -> agregarEmpleado());
         btnModificar.addActionListener(e -> modificarEmpleado());
+        btnLimpiar.addActionListener(e -> limpiarCampos());
         btnEliminar.addActionListener(e -> eliminarEmpleado());
         btnRegresar.addActionListener(e -> this.dispose());
 
@@ -111,7 +117,6 @@ public class VentanaEmpleados extends JFrame {
     }
     
     private void cargarDatosEmpleados() {
-        // --- CORRECCIÓN: Se usan los nombres de columna del script SQL (idEmpleado, idSucursal, etc.) ---
         String sql = "SELECT idEmpleado, nombre, apellido, cedula, cargo, email, idSucursal FROM EMPLEADO ORDER BY idEmpleado";
         tablaEmpleados.setModel(dbConnector.query(sql));
     }
@@ -135,7 +140,6 @@ public class VentanaEmpleados extends JFrame {
     private void agregarEmpleado() {
         if (!validarCampos()) return;
         
-        // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
         String sql = "INSERT INTO EMPLEADO (idEmpleado, nombre, apellido, cedula, cargo, email, idSucursal) VALUES ((SELECT NVL(MAX(idEmpleado), 0) + 1 FROM EMPLEADO), ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = dbConnector.getConnection();
@@ -165,7 +169,6 @@ public class VentanaEmpleados extends JFrame {
         }
         if (!validarCampos()) return;
         
-        // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
         String sql = "UPDATE EMPLEADO SET nombre = ?, apellido = ?, cedula = ?, cargo = ?, email = ?, idSucursal = ? WHERE idEmpleado = ?";
         
         try (Connection conn = dbConnector.getConnection();
@@ -199,7 +202,6 @@ public class VentanaEmpleados extends JFrame {
         }
         int res = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este empleado?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (res == JOptionPane.YES_OPTION) {
-            // --- CORRECCIÓN: Se usan PreparedStatement y nombres de columna correctos ---
             String sql = "DELETE FROM EMPLEADO WHERE idEmpleado = ?";
             try (Connection conn = dbConnector.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -230,8 +232,9 @@ public class VentanaEmpleados extends JFrame {
     }
 
     private JTextField crearCampo(JPanel panel, String etiqueta, int y) {
-        JLabel lbl = new JLabel(etiqueta + ":");
+        JLabel lbl = new JLabel(etiqueta);
         lbl.setBounds(10, y, 120, 25);
+        lbl.setFont(new Font("Arial", Font.PLAIN, 14));
         panel.add(lbl);
         JTextField txt = new JTextField();
         txt.setBounds(140, y, 220, 25);
@@ -239,12 +242,13 @@ public class VentanaEmpleados extends JFrame {
         return txt;
     }
 
-    private JButton crearBoton(String texto, int x, int y, Color color) {
+    private JButton crearBoton(String texto, int x, int y, Color colorFondo, Color colorTexto) {
         JButton boton = new JButton(texto);
         boton.setBounds(x, y, 150, 40);
-        boton.setBackground(color);
-        boton.setForeground(Color.WHITE);
+        boton.setBackground(colorFondo);
+        boton.setForeground(colorTexto);
         boton.setFont(new Font("Arial", Font.BOLD, 14));
+        boton.setFocusPainted(false);
         return boton;
     }
 }

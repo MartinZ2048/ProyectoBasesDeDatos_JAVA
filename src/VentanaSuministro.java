@@ -2,6 +2,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -22,21 +24,42 @@ public class VentanaSuministro extends JFrame {
     private JTable tablaSuministros;
     private JTextField txtIdSuministro, txtIdProveedor, txtIdLibro, txtCantidad, txtFecha;
 
+    private Connection transactionConnection;
+    private boolean hasChanges = false;
+
     public VentanaSuministro() {
         dbConnector = new DatabaseConnector();
+        abrirConexionTransaccional();
         initComponents();
         cargarDatosSuministros();
     }
 
+    private void abrirConexionTransaccional() {
+        try {
+            transactionConnection = dbConnector.getConnection();
+            transactionConnection.setAutoCommit(false);
+        } catch (SQLException | ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(this, "Error crítico al conectar con la base de datos: " + e.getMessage(), "Error de Conexión", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+    }
+
     private void initComponents() {
         setTitle("Gestión de Suministros");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(1200, 700);
         setLocationRelativeTo(null);
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(245, 245, 245));
 
-        JLabel lblTituloVentana = new JLabel("\"SUMINISTRO\" - Quicentro", JLabel.CENTER);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                cerrarVentana();
+            }
+        });
+
+        JLabel lblTituloVentana = new JLabel("SUMINISTRO - Quicentro", JLabel.CENTER);
         lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
         lblTituloVentana.setBounds(10, 10, 1160, 30);
         getContentPane().add(lblTituloVentana);
@@ -78,20 +101,23 @@ public class VentanaSuministro extends JFrame {
         panelBotones.setBackground(new Color(245, 245, 245));
         getContentPane().add(panelBotones);
         
-        JButton btnAgregar = crearBoton("Agregar", 200, 10, new Color(144, 238, 144), Color.BLACK);
-        JButton btnModificar = crearBoton("Modificar", 400, 10, new Color(255, 255, 0), Color.BLACK);
-        JButton btnEliminar = crearBoton("Eliminar", 600, 10, new Color(255, 99, 71), Color.WHITE);
-        JButton btnRegresar = crearBoton("Regresar", 800, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnAgregar = crearBoton("Agregar", 150, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 320, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnEliminar = crearBoton("Eliminar", 490, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnGuardar = crearBoton("Guardar cambios", 660, 10, new Color(138, 43, 226), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 830, 10, new Color(255, 165, 0), Color.WHITE);
 
         panelBotones.add(btnAgregar);
         panelBotones.add(btnModificar);
         panelBotones.add(btnEliminar);
+        panelBotones.add(btnGuardar);
         panelBotones.add(btnRegresar);
 
         btnAgregar.addActionListener(e -> agregarSuministro());
         btnModificar.addActionListener(e -> modificarSuministro());
         btnEliminar.addActionListener(e -> eliminarSuministro());
-        btnRegresar.addActionListener(e -> this.dispose());
+        btnGuardar.addActionListener(e -> guardarCambios());
+        btnRegresar.addActionListener(e -> cerrarVentana());
 
         tablaSuministros.addMouseListener(new MouseAdapter() {
             @Override
@@ -120,22 +146,18 @@ public class VentanaSuministro extends JFrame {
         }
 
         String sql = "INSERT INTO SUMINISTRO (idSuministro, idProveedor, idLibro, cantidad, fecha) VALUES ((SELECT NVL(MAX(idSuministro), 0) + 1 FROM SUMINISTRO), ?, ?, ?, SYSDATE)";
-        
-        try (Connection conn = dbConnector.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+        try (PreparedStatement pstmt = transactionConnection.prepareStatement(sql)) {
             pstmt.setInt(1, Integer.parseInt(txtIdProveedor.getText()));
             pstmt.setInt(2, Integer.parseInt(txtIdLibro.getText()));
             pstmt.setInt(3, Integer.parseInt(txtCantidad.getText()));
 
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                JOptionPane.showMessageDialog(this, "Suministro agregado exitosamente.");
-                cargarDatosSuministros();
-                limpiarCampos();
-            }
-        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
-            JOptionPane.showMessageDialog(this, "Error al agregar el suministro: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+            pstmt.executeUpdate();
+            hasChanges = true;
+            JOptionPane.showMessageDialog(this, "Suministro agregado a la transacción. Guarde los cambios para confirmar.");
+            cargarDatosSuministros();
+            limpiarCampos();
+        } catch (SQLException | NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Error al agregar el suministro: " + ex.getMessage(), "Error de Transacción", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -146,25 +168,19 @@ public class VentanaSuministro extends JFrame {
         }
 
         String sql = "UPDATE SUMINISTRO SET idProveedor = ?, idLibro = ?, cantidad = ? WHERE idSuministro = ?";
-
-        try (Connection conn = dbConnector.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement pstmt = transactionConnection.prepareStatement(sql)) {
             pstmt.setInt(1, Integer.parseInt(txtIdProveedor.getText()));
             pstmt.setInt(2, Integer.parseInt(txtIdLibro.getText()));
             pstmt.setInt(3, Integer.parseInt(txtCantidad.getText()));
             pstmt.setInt(4, Integer.parseInt(txtIdSuministro.getText()));
 
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0) {
-                JOptionPane.showMessageDialog(this, "Suministro modificado exitosamente.");
-                cargarDatosSuministros();
-                limpiarCampos();
-            } else {
-                JOptionPane.showMessageDialog(this, "No se encontró el suministro para modificar.", "Error de Modificación", JOptionPane.WARNING_MESSAGE);
-            }
-        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
-            JOptionPane.showMessageDialog(this, "Error al modificar el suministro: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+            pstmt.executeUpdate();
+            hasChanges = true;
+            JOptionPane.showMessageDialog(this, "Suministro modificado en la transacción. Guarde los cambios para confirmar.");
+            cargarDatosSuministros();
+            limpiarCampos();
+        } catch (SQLException | NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Error al modificar el suministro: " + ex.getMessage(), "Error de Transacción", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -177,21 +193,56 @@ public class VentanaSuministro extends JFrame {
         int confirmacion = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este suministro?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (confirmacion == JOptionPane.YES_OPTION) {
             String sql = "DELETE FROM SUMINISTRO WHERE idSuministro = ?";
-            try (Connection conn = dbConnector.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+            try (PreparedStatement pstmt = transactionConnection.prepareStatement(sql)) {
                 pstmt.setInt(1, Integer.parseInt(txtIdSuministro.getText()));
-
-                int affectedRows = pstmt.executeUpdate();
-                if (affectedRows > 0) {
-                    JOptionPane.showMessageDialog(this, "Suministro eliminado exitosamente.");
-                    cargarDatosSuministros();
-                    limpiarCampos();
-                }
-            } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
-                JOptionPane.showMessageDialog(this, "Error al eliminar el suministro: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                pstmt.executeUpdate();
+                hasChanges = true;
+                JOptionPane.showMessageDialog(this, "Suministro eliminado de la transacción. Guarde los cambios para confirmar.");
+                cargarDatosSuministros();
+                limpiarCampos();
+            } catch (SQLException | NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el suministro: " + ex.getMessage(), "Error de Transacción", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+    
+    private void guardarCambios() {
+        if (!hasChanges) {
+            JOptionPane.showMessageDialog(this, "No hay cambios pendientes para guardar.");
+            return;
+        }
+        try {
+            transactionConnection.commit();
+            hasChanges = false;
+            JOptionPane.showMessageDialog(this, "Cambios guardados y replicados exitosamente.");
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al guardar los cambios: " + ex.getMessage(), "Error de Commit", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cerrarVentana() {
+        if (hasChanges) {
+            int response = JOptionPane.showConfirmDialog(this, "Tiene cambios sin guardar. ¿Desea guardarlos antes de salir?", "Cambios Pendientes", JOptionPane.YES_NO_CANCEL_OPTION);
+            if (response == JOptionPane.YES_OPTION) {
+                guardarCambios();
+            } else if (response == JOptionPane.NO_OPTION) {
+                try {
+                    transactionConnection.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                return; // Cancelar cierre
+            }
+        }
+        try {
+            if (transactionConnection != null && !transactionConnection.isClosed()) {
+                transactionConnection.close();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        this.dispose();
     }
     
     private void limpiarCampos() {

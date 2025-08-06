@@ -2,6 +2,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -21,22 +23,43 @@ public class VentanaProveedores extends JFrame {
     private final DatabaseConnector dbConnector;
     private JTable tablaProveedores;
     private JTextField txtIdProveedor, txtNombre, txtContacto, txtTelefono, txtEmail, txtDireccion;
+    
+    private Connection transactionConnection;
+    private boolean hasChanges = false;
 
     public VentanaProveedores() {
         dbConnector = new DatabaseConnector();
+        abrirConexionTransaccional();
         initComponents();
         cargarDatosProveedores();
+    }
+    
+    private void abrirConexionTransaccional() {
+        try {
+            transactionConnection = dbConnector.getConnection();
+            transactionConnection.setAutoCommit(false);
+        } catch (SQLException | ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(this, "Error crítico al conectar con la base de datos: " + e.getMessage(), "Error de Conexión", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
     }
 
     private void initComponents() {
         setTitle("Gestión de Proveedores");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(1200, 700);
         setLocationRelativeTo(null);
         getContentPane().setLayout(null);
         getContentPane().setBackground(new Color(245, 245, 245));
 
-        JLabel lblTituloVentana = new JLabel("\"PROVEEDORES\" - Quicentro", JLabel.CENTER);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                cerrarVentana();
+            }
+        });
+
+        JLabel lblTituloVentana = new JLabel("PROVEEDORES - Quicentro", JLabel.CENTER);
         lblTituloVentana.setFont(new Font("Monospaced", Font.BOLD, 24));
         lblTituloVentana.setBounds(10, 10, 1160, 30);
         getContentPane().add(lblTituloVentana);
@@ -78,20 +101,23 @@ public class VentanaProveedores extends JFrame {
         panelBotones.setBackground(new Color(245, 245, 245));
         getContentPane().add(panelBotones);
         
-        JButton btnAgregar = crearBoton("Agregar", 200, 10, new Color(144, 238, 144), Color.BLACK);
-        JButton btnModificar = crearBoton("Modificar", 400, 10, new Color(255, 255, 0), Color.BLACK);
-        JButton btnEliminar = crearBoton("Eliminar", 600, 10, new Color(255, 99, 71), Color.WHITE);
-        JButton btnRegresar = crearBoton("Regresar", 800, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnAgregar = crearBoton("Agregar", 150, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 320, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnEliminar = crearBoton("Eliminar", 490, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnGuardar = crearBoton("Guardar cambios", 660, 10, new Color(138, 43, 226), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 830, 10, new Color(255, 165, 0), Color.WHITE);
 
         panelBotones.add(btnAgregar);
         panelBotones.add(btnModificar);
         panelBotones.add(btnEliminar);
+        panelBotones.add(btnGuardar);
         panelBotones.add(btnRegresar);
 
         btnAgregar.addActionListener(e -> agregarProveedor());
         btnModificar.addActionListener(e -> modificarProveedor());
         btnEliminar.addActionListener(e -> eliminarProveedor());
-        btnRegresar.addActionListener(e -> this.dispose());
+        btnGuardar.addActionListener(e -> guardarCambios());
+        btnRegresar.addActionListener(e -> cerrarVentana());
 
         tablaProveedores.addMouseListener(new MouseAdapter() {
             @Override
@@ -121,40 +147,20 @@ public class VentanaProveedores extends JFrame {
         }
 
         String sql = "INSERT INTO PROVEEDOR (idProveedor, nombre, contacto, telefono, email, direccion) VALUES ((SELECT NVL(MAX(idProveedor), 0) + 1 FROM PROVEEDOR), ?, ?, ?, ?, ?)";
-        Connection conn = null;
-        try {
-            conn = dbConnector.getConnection();
-            conn.setAutoCommit(false); // Desactivar auto-commit
+        try (PreparedStatement pstmt = transactionConnection.prepareStatement(sql)) {
+            pstmt.setString(1, txtNombre.getText());
+            pstmt.setString(2, txtContacto.getText());
+            pstmt.setString(3, txtTelefono.getText());
+            pstmt.setString(4, txtEmail.getText());
+            pstmt.setString(5, txtDireccion.getText());
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, txtNombre.getText());
-                pstmt.setString(2, txtContacto.getText());
-                pstmt.setString(3, txtTelefono.getText());
-                pstmt.setString(4, txtEmail.getText());
-                pstmt.setString(5, txtDireccion.getText());
-
-                int affectedRows = pstmt.executeUpdate();
-                if (affectedRows > 0) {
-                    conn.commit(); // --- CORRECCIÓN: Realizar COMMIT explícito ---
-                    JOptionPane.showMessageDialog(this, "Proveedor agregado exitosamente.");
-                    cargarDatosProveedores();
-                    limpiarCampos();
-                } else {
-                    conn.rollback();
-                }
-            }
-        } catch (SQLException | ClassNotFoundException ex) {
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException e) { e.printStackTrace(); }
-            JOptionPane.showMessageDialog(this, "Error al agregar el proveedor: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (conn != null) {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                }
-            } catch (SQLException e) { e.printStackTrace(); }
+            pstmt.executeUpdate();
+            hasChanges = true;
+            JOptionPane.showMessageDialog(this, "Proveedor agregado a la transacción. Guarde los cambios para confirmar.");
+            cargarDatosProveedores();
+            limpiarCampos();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al agregar el proveedor: " + ex.getMessage(), "Error de Transacción", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -165,42 +171,21 @@ public class VentanaProveedores extends JFrame {
         }
 
         String sql = "UPDATE PROVEEDOR SET nombre = ?, contacto = ?, telefono = ?, email = ?, direccion = ? WHERE idProveedor = ?";
-        Connection conn = null;
-        try {
-            conn = dbConnector.getConnection();
-            conn.setAutoCommit(false);
+        try (PreparedStatement pstmt = transactionConnection.prepareStatement(sql)) {
+            pstmt.setString(1, txtNombre.getText());
+            pstmt.setString(2, txtContacto.getText());
+            pstmt.setString(3, txtTelefono.getText());
+            pstmt.setString(4, txtEmail.getText());
+            pstmt.setString(5, txtDireccion.getText());
+            pstmt.setInt(6, Integer.parseInt(txtIdProveedor.getText()));
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, txtNombre.getText());
-                pstmt.setString(2, txtContacto.getText());
-                pstmt.setString(3, txtTelefono.getText());
-                pstmt.setString(4, txtEmail.getText());
-                pstmt.setString(5, txtDireccion.getText());
-                pstmt.setInt(6, Integer.parseInt(txtIdProveedor.getText()));
-
-                int affectedRows = pstmt.executeUpdate();
-                if (affectedRows > 0) {
-                    conn.commit(); // --- CORRECCIÓN: Realizar COMMIT explícito ---
-                    JOptionPane.showMessageDialog(this, "Proveedor modificado exitosamente.");
-                    cargarDatosProveedores();
-                    limpiarCampos();
-                } else {
-                    conn.rollback();
-                    JOptionPane.showMessageDialog(this, "No se encontró el proveedor para modificar.", "Error de Modificación", JOptionPane.WARNING_MESSAGE);
-                }
-            }
-        } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException e) { e.printStackTrace(); }
-            JOptionPane.showMessageDialog(this, "Error al modificar el proveedor: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (conn != null) {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                }
-            } catch (SQLException e) { e.printStackTrace(); }
+            pstmt.executeUpdate();
+            hasChanges = true;
+            JOptionPane.showMessageDialog(this, "Proveedor modificado en la transacción. Guarde los cambios para confirmar.");
+            cargarDatosProveedores();
+            limpiarCampos();
+        } catch (SQLException | NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Error al modificar el proveedor: " + ex.getMessage(), "Error de Transacción", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -213,38 +198,56 @@ public class VentanaProveedores extends JFrame {
         int confirmacion = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar este proveedor?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
         if (confirmacion == JOptionPane.YES_OPTION) {
             String sql = "DELETE FROM PROVEEDOR WHERE idProveedor = ?";
-            Connection conn = null;
-            try {
-                conn = dbConnector.getConnection();
-                conn.setAutoCommit(false);
-                
-                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    pstmt.setInt(1, Integer.parseInt(txtIdProveedor.getText()));
-
-                    int affectedRows = pstmt.executeUpdate();
-                    if (affectedRows > 0) {
-                        conn.commit(); // --- CORRECCIÓN: Realizar COMMIT explícito ---
-                        JOptionPane.showMessageDialog(this, "Proveedor eliminado exitosamente.");
-                        cargarDatosProveedores();
-                        limpiarCampos();
-                    } else {
-                        conn.rollback();
-                    }
-                }
-            } catch (SQLException | NumberFormatException | ClassNotFoundException ex) {
-                try {
-                    if (conn != null) conn.rollback();
-                } catch (SQLException e) { e.printStackTrace(); }
-                JOptionPane.showMessageDialog(this, "Error al eliminar el proveedor: " + ex.getMessage(), "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-            } finally {
-                try {
-                    if (conn != null) {
-                        conn.setAutoCommit(true);
-                        conn.close();
-                    }
-                } catch (SQLException e) { e.printStackTrace(); }
+            try (PreparedStatement pstmt = transactionConnection.prepareStatement(sql)) {
+                pstmt.setInt(1, Integer.parseInt(txtIdProveedor.getText()));
+                pstmt.executeUpdate();
+                hasChanges = true;
+                JOptionPane.showMessageDialog(this, "Proveedor eliminado de la transacción. Guarde los cambios para confirmar.");
+                cargarDatosProveedores();
+                limpiarCampos();
+            } catch (SQLException | NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el proveedor: " + ex.getMessage(), "Error de Transacción", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+    
+    private void guardarCambios() {
+        if (!hasChanges) {
+            JOptionPane.showMessageDialog(this, "No hay cambios pendientes para guardar.");
+            return;
+        }
+        try {
+            transactionConnection.commit();
+            hasChanges = false;
+            JOptionPane.showMessageDialog(this, "Cambios guardados y replicados exitosamente.");
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al guardar los cambios: " + ex.getMessage(), "Error de Commit", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cerrarVentana() {
+        if (hasChanges) {
+            int response = JOptionPane.showConfirmDialog(this, "Tiene cambios sin guardar. ¿Desea guardarlos antes de salir?", "Cambios Pendientes", JOptionPane.YES_NO_CANCEL_OPTION);
+            if (response == JOptionPane.YES_OPTION) {
+                guardarCambios();
+            } else if (response == JOptionPane.NO_OPTION) {
+                try {
+                    transactionConnection.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                return; // Cancelar cierre
+            }
+        }
+        try {
+            if (transactionConnection != null && !transactionConnection.isClosed()) {
+                transactionConnection.close();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        this.dispose();
     }
 
     private void limpiarCampos() {
