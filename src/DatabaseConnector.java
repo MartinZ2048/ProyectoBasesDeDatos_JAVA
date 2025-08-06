@@ -59,7 +59,7 @@ public class DatabaseConnector {
      */
     public void registrarAuditoria(String tablaAfectada, String operacion, String idRegistro, String datosNuevos) {
         // Se obtiene el usuario de la base de datos actual.
-        String usuarioActual = "biblioteca_master"; 
+        String usuarioActual = "maestronodo"; 
         
         // --- IMPORTANTE: Esta implementación sigue siendo vulnerable a inyección SQL ---
         // Se recomienda refactorizar para usar PreparedStatement también aquí.

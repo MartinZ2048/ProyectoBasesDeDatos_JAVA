@@ -20,8 +20,6 @@ public class VentanaSucursales extends JFrame {
 
     private final DatabaseConnector dbConnector;
     private JTable tablaSucursales;
-
-    // --- Componentes del Formulario ---
     private JTextField txtIdSucursal, txtNombre, txtCiudad, txtTelefono, txtDireccion;
 
     public VentanaSucursales() {
