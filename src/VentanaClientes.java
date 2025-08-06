@@ -89,18 +89,19 @@ public class VentanaClientes extends JFrame {
         panelBotones.setBackground(new Color(245, 245, 245));
         getContentPane().add(panelBotones);
         
-        // --- CORRECCIÓN: Nueva disposición y colores de botones ---
-        JButton btnAgregar = crearBoton("Agregar", 120, 10, new Color(144, 238, 144), Color.BLACK);
-        JButton btnModificar = crearBoton("Modificar", 290, 10, new Color(255, 255, 0), Color.BLACK);
-        JButton btnLimpiar = crearBoton("Limpiar", 460, 10, new Color(173, 216, 230), Color.BLACK); // Azul claro
-        JButton btnEliminar = crearBoton("Eliminar", 630, 10, new Color(255, 99, 71), Color.WHITE);
-        JButton btnRegresar = crearBoton("Regresar", 950, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnAgregar = crearBoton("Agregar", 20, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 190, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnLimpiar = crearBoton("Limpiar", 360, 10, new Color(173, 216, 230), Color.BLACK);
+        JButton btnEliminar = crearBoton("Eliminar", 530, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 700, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnVistaGlobal = crearBoton("Vista Global", 870, 10, new Color(128, 128, 128), Color.WHITE);
 
         panelBotones.add(btnAgregar);
         panelBotones.add(btnModificar);
         panelBotones.add(btnLimpiar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnRegresar);
+        panelBotones.add(btnVistaGlobal);
 
         // --- Action Listeners ---
         btnAgregar.addActionListener(e -> agregarCliente());
@@ -108,6 +109,7 @@ public class VentanaClientes extends JFrame {
         btnLimpiar.addActionListener(e -> limpiarCampos());
         btnEliminar.addActionListener(e -> eliminarCliente());
         btnRegresar.addActionListener(e -> this.dispose());
+        btnVistaGlobal.addActionListener(e -> mostrarVistaGlobal());
 
         tablaClientes.addMouseListener(new MouseAdapter() {
             @Override
@@ -247,6 +249,11 @@ public class VentanaClientes extends JFrame {
         txtDireccion.setText("");
         txtIdSucursal.setText("");
         tablaClientes.clearSelection();
+    }
+
+    private void mostrarVistaGlobal() {
+        VentanaGlobalClientes vistaGlobal = new VentanaGlobalClientes();
+        vistaGlobal.setVisible(true);
     }
 
     private JTextField crearCampo(JPanel panel, String etiqueta, int y) {

@@ -79,23 +79,26 @@ public class VentanaVentas extends JFrame {
         panelBotones.setBackground(new Color(245, 245, 245));
         getContentPane().add(panelBotones);
         
-        JButton btnAgregar = crearBoton("Agregar", 120, 10, new Color(144, 238, 144), Color.BLACK);
-        JButton btnModificar = crearBoton("Modificar", 290, 10, new Color(255, 255, 0), Color.BLACK);
-        JButton btnLimpiar = crearBoton("Limpiar", 460, 10, new Color(173, 216, 230), Color.BLACK);
-        JButton btnEliminar = crearBoton("Eliminar", 630, 10, new Color(255, 99, 71), Color.WHITE);
-        JButton btnRegresar = crearBoton("Regresar", 950, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnAgregar = crearBoton("Agregar", 20, 10, new Color(144, 238, 144), Color.BLACK);
+        JButton btnModificar = crearBoton("Modificar", 190, 10, new Color(255, 255, 0), Color.BLACK);
+        JButton btnLimpiar = crearBoton("Limpiar", 360, 10, new Color(173, 216, 230), Color.BLACK);
+        JButton btnEliminar = crearBoton("Eliminar", 530, 10, new Color(255, 99, 71), Color.WHITE);
+        JButton btnRegresar = crearBoton("Regresar", 700, 10, new Color(255, 165, 0), Color.WHITE);
+        JButton btnVistaGlobal = crearBoton("Vista Global", 870, 10, new Color(128, 128, 128), Color.WHITE);
 
         panelBotones.add(btnAgregar);
         panelBotones.add(btnModificar);
         panelBotones.add(btnLimpiar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnRegresar);
+        panelBotones.add(btnVistaGlobal);
 
         btnAgregar.addActionListener(e -> agregarVenta());
         btnModificar.addActionListener(e -> modificarVenta());
         btnLimpiar.addActionListener(e -> limpiarCampos());
         btnEliminar.addActionListener(e -> eliminarVenta());
         btnRegresar.addActionListener(e -> this.dispose());
+        btnVistaGlobal.addActionListener(e -> mostrarVistaGlobal());
 
         tablaVentas.addMouseListener(new MouseAdapter() {
             @Override
@@ -209,6 +212,11 @@ public class VentanaVentas extends JFrame {
         txtTotal.setText("");
         txtIdSucursal.setText("");
         tablaVentas.clearSelection();
+    }
+    
+    private void mostrarVistaGlobal() {
+        VentanaGlobalVentas vistaGlobal = new VentanaGlobalVentas();
+        vistaGlobal.setVisible(true);
     }
 
     private JTextField crearCampo(JPanel panel, String etiqueta, int y) {
